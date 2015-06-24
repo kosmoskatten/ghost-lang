@@ -1,0 +1,3 @@
+module GhostLang
+    (
+    ) where
