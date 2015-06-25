@@ -2,6 +2,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module GhostLang.Interpreter
     ( Interpreter (..)
+    , Executable (..)
+    , Operation (..)
+    , Pattern (..)
+    , Procedure (..)
+    , execPattern
     , runInterpreter
     ) where
 
@@ -15,13 +20,14 @@ newtype Interpreter a =
   deriving (Functor, Applicative, Monad
            , MonadReader Int, MonadState Int, MonadIO)
 
-runInterpreter :: Executable a => 
-                  (Pattern a -> Interpreter b) -> Pattern a -> IO b
-runInterpreter interpreter pattern =
-  evalStateT (runReaderT (extractInterpreter (interpreter pattern)) 0) 0
-
 class Executable a where
-    exec :: a -> Interpreter b
+    exec :: a -> Interpreter ()
+
+data Pattern a where
+    Pattern :: Executable a => !Text -> !Int -> ![Operation a] -> Pattern a
+
+data Procedure a where
+    Procedure :: Executable a => !Text -> ![Operation a] -> Procedure a
 
 data Operation a where
     Invoke :: Executable a => !a -> Operation a
@@ -35,9 +41,14 @@ data Operation a where
 
     Unresolved :: Executable a => !Text -> Operation a
 
-data Pattern a where
-    Pattern :: Executable a => !Text -> !Int -> ![Operation a] -> Pattern a
+-- | Run the interpreter on the provided pattern.
+runInterpreter :: Executable a => 
+                  (Pattern a -> Interpreter ()) -> Pattern a -> IO ()
+runInterpreter interpreter pattern =
+  evalStateT (runReaderT (extractInterpreter (interpreter pattern)) 0) 0
 
-data Procedure a where
-    Procedure :: Executable a => !Text -> ![Operation a] -> Procedure a
-    
+execPattern :: Executable a => Pattern a -> Interpreter ()
+execPattern (Pattern _ _ ops) = mapM_ exec ops
+
+instance Executable a => Executable (Operation a) where
+    exec (Invoke instr) = exec instr

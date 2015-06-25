@@ -36,8 +36,12 @@ test-suite ghost-lang-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
+  other-modules:       GhostLang.InterpreterTests
   build-depends:       base
                      , ghost-lang
+                     , HUnit
+                     , test-framework
+                     , test-framework-hunit
   ghc-options:         -Wall
   default-language:    Haskell2010
 
