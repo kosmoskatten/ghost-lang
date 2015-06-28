@@ -4,7 +4,6 @@ module Main
 
 import GhostLang.InterpreterTests (simpleSequencePattern)
 import Test.Framework (Test, defaultMain, testGroup)
-import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 
 main :: IO ()

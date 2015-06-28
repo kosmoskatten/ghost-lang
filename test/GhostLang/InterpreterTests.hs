@@ -5,8 +5,14 @@ module GhostLang.InterpreterTests
     ( simpleSequencePattern
     ) where
 
+import Control.Concurrent.STM (newTVarIO, readTVarIO)
 import Data.Text (pack)
-import GhostLang.Counter (Counter (..), emptyCounter)
+import GhostLang.Counter ( Counter (..)
+                         , emptyCounter
+                         , getPatternRuns
+                         , getTotalPatternRuns
+                         , getTotalProcCalls
+                         )
 import GhostLang.Interpreter (execPattern)
 import GhostLang.InterpreterM (runInterpreter)
 import GhostLang.Types ( Label
@@ -44,13 +50,27 @@ instance Arbitrary Label where
 invokeOperation :: Gen (Operation TestInstrSet)
 invokeOperation = Invoke <$> arbitrary
 
--- | Property to test a simple sequence pattern of instructions. The
--- instrInvoked counter shall be equal to the length of the operations
--- list.
+-- | Property to test a simple sequence pattern of
+-- instructions. There's a fresh counter instance at each invokation.
 simpleSequencePattern :: SimpleSequencePattern -> Property
 simpleSequencePattern (SimpleSequencePattern p) =
     monadicIO $ do
-      counter <- run (runInterpreter emptyCounter $ execPattern p)
+      inpC    <- run (newTVarIO emptyCounter)
+      run (runInterpreter [inpC] $ execPattern p)
+      counter <- run (readTVarIO inpC)
+
+      -- As many instructions invoked as the number of operations in
+      -- the list.
       assert $ (opsLength p) == instrInvoked counter
+
+      -- This pattern shall have been run once.
+      assert $ 1 == getPatternRuns (patternName p) counter
+
+      -- The total number of patterns is one as well.
+      assert $ 1 == getTotalPatternRuns counter
+
+      -- No procedures called.
+      assert $ 0 == getTotalProcCalls counter
     where
-      opsLength (Pattern _ _ ops) = fromIntegral $ length ops
+      opsLength (Pattern _ _ ops)    = fromIntegral $ length ops
+      patternName (Pattern name _ _) = name
