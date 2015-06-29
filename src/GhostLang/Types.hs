@@ -1,55 +1,62 @@
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE DeriveGeneric        #-}
+{-# LANGUAGE GADTs                #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module GhostLang.Types
     ( Label
     , Weight
-    , InstructionSet (..)
+    , Program (..)
     , Pattern (..)
     , Procedure (..)
     , Operation (..)
     ) where
 
-import Data.Text (Text, unpack)
-import GhostLang.InterpreterM (InterpreterM)
-import Text.Printf (printf)
+import Data.Serialize (Serialize (..), getByteString, putByteString)
+import Data.Text (Text)
+import Data.Text.Encoding (encodeUtf8, decodeUtf8)
+import GHC.Generics (Generic)
 
--- | Instruction set type class.
-class InstructionSet a where
-    exec :: a -> InterpreterM ()
+import qualified Data.Text as T
 
 type Label = Text
 type Weight = Int
 
+data Program a where
+    Program :: !Text -> ![Pattern a] -> Program a
+    deriving (Eq, Generic, Show)
+
 data Pattern a where
-    Pattern :: InstructionSet a => 
-               !Label -> !Weight -> ![Operation a] -> Pattern a
+    Pattern :: !Label -> !Weight -> ![Operation a] -> Pattern a
+    deriving (Eq, Generic, Show)
 
 data Procedure a where
-    Procedure :: InstructionSet a => !Label -> ![Operation a] -> Procedure a
+    Procedure :: !Label -> ![Operation a] -> Procedure a
+    deriving (Eq, Generic, Show)
 
 data Operation a where
-    Invoke :: InstructionSet a => !a -> Operation a
+    Invoke :: !a -> Operation a
     -- ^ Invoke is the operation of invoking a simple element of the
     -- ghost language. E.g. invoking a http get.
 
-    Call :: InstructionSet a => !(Procedure a) -> Operation a
+    Call :: !(Procedure a) -> Operation a
     -- ^ Call is the operation of calling a procedure. The procedure
     -- is given its arguments in a local context of the Interpreter
     -- monad.
 
-    Unresolved :: InstructionSet a => !Label -> Operation a
+    Unresolved :: !Label -> Operation a
+    deriving (Eq, Generic, Show)
 
--- | Show instance for Pattern.
-instance Show a => Show (Pattern a) where
-    show (Pattern label weight ops) = 
-        printf "Pattern %s %d %s\n" (unpack label) weight (show ops)
+instance Serialize a => Serialize (Program a)
+instance Serialize a => Serialize (Pattern a)
+instance Serialize a => Serialize (Procedure a)
+instance Serialize a => Serialize (Operation a)
 
--- | Show instance for Procedure.
-instance Show a => Show (Procedure a) where
-    show (Procedure label ops) = printf "Procedure %s %s\n" (unpack label) 
-                                                            (show ops)
+-- | Serialize instance for Text as it's not included in the Cereal
+-- library.
+instance Serialize Text where
+    put t = do
+      put $ T.length t
+      putByteString $ encodeUtf8 t
 
--- | Show instance for Operation.
-instance Show a => Show (Operation a) where
-    show (Invoke instr)     = printf "Invoke %s\n" (show instr)
-    show (Call proc)        = printf "Call %s\n" (show proc)
-    show (Unresolved label) = printf "Unresolved %s\n" (unpack label)
+    get = do
+      len <- get
+      decodeUtf8 <$> getByteString len

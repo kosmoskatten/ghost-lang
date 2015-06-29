@@ -1,13 +1,18 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module GhostLang.Interpreter
-    ( execPattern
+    ( InstructionSet (..)
+    , execPattern
     ) where
 
 import GhostLang.InterpreterM ( InterpreterM
                               , incInstrInvoked
                               , incPatternRuns
                               )
-import GhostLang.Types (InstructionSet (..), Operation (..), Pattern (..))
+import GhostLang.Types (Operation (..), Pattern (..))
+
+-- | Instruction set type class.
+class InstructionSet a where
+    exec :: a -> InterpreterM ()
 
 -- | Execute a pattern within InterpreterM.
 execPattern :: InstructionSet a => Pattern a -> InterpreterM ()

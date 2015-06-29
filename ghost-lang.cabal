@@ -17,8 +17,11 @@ test-suite ghost-lang-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  other-modules:       GhostLang.InterpreterTests
+  other-modules:       GhostLang.Generators
+                       GhostLang.InterpreterTests
+                       GhostLang.SerializationTests
   build-depends:       base
+                     , cereal
                      , ghost-lang
                      , HUnit
                      , stm
@@ -38,6 +41,8 @@ library
                        GhostLang.InterpreterM
                        GhostLang.Types
   build-depends:       base >= 4.7 && < 5
+                     , cereal
+                     , cereal-conduit
                      , containers
                      , mtl
                      , text

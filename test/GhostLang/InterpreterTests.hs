@@ -1,54 +1,26 @@
-{-# LANGUAGE OverloadedStrings    #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 module GhostLang.InterpreterTests
     ( simpleSequencePattern
+    , manySimpleSequencePatterns
     ) where
 
 import Control.Concurrent.STM (newTVarIO, readTVarIO)
-import Data.Text (pack)
+import Control.Monad (forM)
+import Data.Text (Text)
+import GHC.Int (Int64)
 import GhostLang.Counter ( Counter (..)
                          , emptyCounter
                          , getPatternRuns
                          , getTotalPatternRuns
                          , getTotalProcCalls
                          )
+import GhostLang.Generators ( SimpleSequencePattern (..)
+                            , ManySimpleSequencePatterns (..)
+                            )
 import GhostLang.Interpreter (execPattern)
 import GhostLang.InterpreterM (runInterpreter)
-import GhostLang.Types ( Label
-                       , InstructionSet (..)
-                       , Pattern (..)
-                       , Operation (..)
-                       )
+import GhostLang.Types (Pattern (..))
 import Test.QuickCheck
 import Test.QuickCheck.Monadic
-
-data TestInstrSet = Instr1 | Instr2
-    deriving Show
-
-instance Arbitrary TestInstrSet where
-    arbitrary = elements [ Instr1, Instr2 ]
-
-instance InstructionSet TestInstrSet where
-    exec _ = return ()
-
-data SimpleSequencePattern =
-    SimpleSequencePattern (Pattern TestInstrSet)
-    deriving Show
-
-instance Arbitrary SimpleSequencePattern where
-    arbitrary = SimpleSequencePattern <$> pattern'
-        where
-          pattern' :: Gen (Pattern TestInstrSet)
-          pattern' = Pattern <$> arbitrary 
-                             <*> arbitrary 
-                             <*> (listOf invokeOperation)
-
-instance Arbitrary Label where
-    arbitrary = pack <$> (listOf1 $ elements ['a'..'z'])
-
-invokeOperation :: Gen (Operation TestInstrSet)
-invokeOperation = Invoke <$> arbitrary
 
 -- | Property to test a simple sequence pattern of
 -- instructions. There's a fresh counter instance at each invokation.
@@ -71,6 +43,39 @@ simpleSequencePattern (SimpleSequencePattern p) =
 
       -- No procedures called.
       assert $ 0 == getTotalProcCalls counter
-    where
-      opsLength (Pattern _ _ ops)    = fromIntegral $ length ops
-      patternName (Pattern name _ _) = name
+
+-- | Property to test a list of simple sequence patterns. The property
+-- is about to test the handling of multiple counters (e.g. a global
+-- counter and local counters) for pattern execution.
+manySimpleSequencePatterns :: ManySimpleSequencePatterns -> Property
+manySimpleSequencePatterns (ManySimpleSequencePatterns ps) =
+    monadicIO $ do
+      globalC <- run (newTVarIO emptyCounter)
+      locals  <- run (forM ps $ \p -> do
+                        localC <- newTVarIO emptyCounter
+                        runInterpreter [globalC, localC] $ execPattern p
+                        return =<< readTVarIO localC
+                     )
+      global <- run (readTVarIO globalC)
+
+      -- As many instructions invoked globaly as the sum of
+      -- operations in the patterns.
+      let totalOps = sum $ map opsLength ps
+      assert $ totalOps == instrInvoked global
+
+      -- Also, the sum of the local counters shall be the same as well.
+      assert $ totalOps == (sum $ map instrInvoked locals)
+
+      -- The total number of pattern runs for the global counter shall
+      -- be equal to the number of patterns supplied to the property.
+      let totalPatterns = fromIntegral $ length ps
+      assert $ totalPatterns == getTotalPatternRuns global
+
+      -- Also, the sum of the local counters shall be the same as well.
+      assert $ totalPatterns == (sum $ map getTotalPatternRuns locals)
+
+opsLength :: Pattern a -> Int64
+opsLength (Pattern _ _ ops) = fromIntegral $ length ops
+
+patternName :: Pattern a -> Text
+patternName (Pattern name _ _) = name
