@@ -22,7 +22,9 @@ test-suite ghost-lang-test
                        GhostLang.SerializationTests
   build-depends:       base
                      , cereal
+                     , directory
                      , ghost-lang
+                     , filepath
                      , HUnit
                      , stm
                      , test-framework
@@ -30,8 +32,9 @@ test-suite ghost-lang-test
                      , test-framework-quickcheck2
                      , text
                      , QuickCheck
+                     , unix
   default-language:    Haskell2010
-  ghc-options:         -Wall
+  ghc-options:         -Wall -O2
 
 library
   hs-source-dirs:      src
@@ -39,10 +42,12 @@ library
                        GhostLang.Counter
                        GhostLang.Interpreter
                        GhostLang.InterpreterM
+                       GhostLang.Serialize
                        GhostLang.Types
   build-depends:       base >= 4.7 && < 5
                      , cereal
                      , cereal-conduit
+                     , conduit-combinators
                      , containers
                      , mtl
                      , text

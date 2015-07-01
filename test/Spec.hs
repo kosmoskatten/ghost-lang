@@ -5,8 +5,11 @@ module Main
 import GhostLang.InterpreterTests ( simpleSequencePattern
                                   , manySimpleSequencePatterns
                                   )
-import GhostLang.SerializationTests (encodeDecodeIsEqual)
+import GhostLang.SerializationTests ( encodeDecodeIsEqual
+                                    , writeReadFile
+                                    )
 import Test.Framework (Test, defaultMain, testGroup)
+import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 
 main :: IO ()
@@ -20,5 +23,6 @@ testSuite =
       ]
     , testGroup "GhostLang.SerializationTests"
       [ testProperty "EncodeDecodeIsEqual" encodeDecodeIsEqual
+      , testCase "WriteReadFile" writeReadFile
       ]
     ]

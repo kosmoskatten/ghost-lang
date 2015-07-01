@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module GhostLang.Generators 
-    ( TestInstrSet
+    ( TestInstrSet (..)
     , SimpleSequencePattern (..)
     , ManySimpleSequencePatterns (..)
     ) where
