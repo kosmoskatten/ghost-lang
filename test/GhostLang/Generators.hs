@@ -10,14 +10,27 @@ module GhostLang.Generators
 import Data.Serialize (Serialize (..))
 import Data.Text (pack)
 import GHC.Generics (Generic)
+import GHC.Int (Int64)
 import GhostLang.Interpreter (InstructionSet (..))
 import GhostLang.Types ( Label
+                       , Value (..)
                        , Program (..)
                        , Pattern (..)
                        , Procedure (..)
                        , Operation (..)
                        )
 import Test.QuickCheck
+
+-- | Arbitrary instance for Value.
+instance Arbitrary Value where
+    arbitrary = oneof [ Const <$> posInt
+                      , Uniform <$> posInt <*> posInt
+                      , Gaussian <$> posInt <*> posInt
+                      , Ind <$> arbitrary
+                      ]
+        where
+          posInt :: Gen Int64
+          posInt = choose (0, maxBound)
 
 -- | Arbitrary instance for Program.
 instance Arbitrary a => Arbitrary (Program a) where
@@ -32,12 +45,15 @@ instance Arbitrary a => Arbitrary (Pattern a) where
 instance Arbitrary a => Arbitrary (Procedure a) where
     arbitrary = Procedure <$> arbitrary <*> (listOf noCall)
         where noCall = oneof [ Invoke <$> arbitrary
+                             , Loop <$> arbitrary 
+                                    <*> (listOf (Invoke <$> arbitrary))
                              , Unresolved <$> arbitrary
                              ]
 
 -- | Arbitrary instance for Operation.
 instance Arbitrary a => Arbitrary (Operation a) where
     arbitrary = oneof [ Invoke <$> arbitrary
+                      , Loop <$> arbitrary <*> (listOf (Invoke <$> arbitrary))
                       , Call <$> arbitrary
                       , Unresolved <$> arbitrary
                       ]

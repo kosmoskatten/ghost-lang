@@ -3,6 +3,7 @@ module GhostLang.Counter
     ( Counter (..)
     , emptyCounter
     , incInstrInvoked'
+    , incLoopRuns'
     , incProcCalls'
     , getTotalProcCalls
     , incPatternRuns'
@@ -20,6 +21,9 @@ data Counter =
             -- ^ The number of instructions invoked during the
             -- execution.
 
+            , loopRuns     :: {-# UNPACK #-} !Int64
+            -- ^ The number of loops run during the execution.
+
             , procCalls    :: !(Map.Map Text Int64)
             -- ^ Book keeping of the number of times certain
             -- procedures are called.
@@ -34,6 +38,7 @@ data Counter =
 emptyCounter :: Counter
 emptyCounter =
     Counter { instrInvoked = 0
+            , loopRuns     = 0
             , procCalls    = Map.empty
             , patternRuns  = Map.empty
             }
@@ -41,6 +46,10 @@ emptyCounter =
 -- | Increase the invoke counter by 1.
 incInstrInvoked' :: Counter -> Counter
 incInstrInvoked' c@Counter {..} = c { instrInvoked = instrInvoked + 1 }
+
+-- | Increase the loop run counter by 1.
+incLoopRuns' :: Counter -> Counter
+incLoopRuns' c@Counter {..} = c { loopRuns = loopRuns + 1 }
 
 -- | Increase the procedure call counter for procedure 'p' by one.
 incProcCalls' :: Text -> Counter -> Counter

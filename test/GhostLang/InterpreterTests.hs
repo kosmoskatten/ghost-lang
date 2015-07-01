@@ -35,6 +35,9 @@ simpleSequencePattern (SimpleSequencePattern p) =
       -- the list.
       assert $ (opsLength p) == instrInvoked counter
 
+      -- There shall be no loop runs.
+      assert $ 0 == loopRuns counter
+
       -- This pattern shall have been run once.
       assert $ 1 == getPatternRuns (patternName p) counter
 

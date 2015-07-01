@@ -4,10 +4,14 @@ module GhostLang.InterpreterM
     , State
     , runInterpreter
 
-      -- API towards ghost-lang interpreter
+      -- API towards ghost-lang interpretation. Counters:
     , incInstrInvoked
+    , incLoopRuns
     , incPatternRuns
     , incProcCalls
+
+      -- Value evaluation:
+    , evalValue
     ) where
 
 import Control.Concurrent.STM ( STM
@@ -26,11 +30,14 @@ import Control.Monad.State ( MonadState
                            )
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Text (Text)
+import GHC.Int (Int64)
 import GhostLang.Counter ( Counter (..) 
                          , incInstrInvoked'
+                         , incLoopRuns'
                          , incPatternRuns'
                          , incProcCalls'
                          )
+import GhostLang.Types (Value (..))
 
 -- | Interpreter monad type for interpretation of instructions
 -- implementing the InstructionSet type class.
@@ -54,6 +61,10 @@ runInterpreter counters interpreter =
 incInstrInvoked :: InterpreterM ()
 incInstrInvoked = updateCounter incInstrInvoked'
 
+-- | Increase counter for the number of loop runs.
+incLoopRuns :: InterpreterM ()
+incLoopRuns = updateCounter incLoopRuns'
+
 -- | Increase the counter for executed patterns.
 incPatternRuns :: Text -> InterpreterM ()
 incPatternRuns name = updateCounter $ incPatternRuns' name
@@ -61,6 +72,11 @@ incPatternRuns name = updateCounter $ incPatternRuns' name
 -- | Increase the counter for called procedures.
 incProcCalls :: Text -> InterpreterM ()
 incProcCalls name = updateCounter $ incProcCalls' name
+
+-- | Evaluate a value.
+evalValue :: Value -> InterpreterM Int64
+evalValue (Const x) = return x
+evalValue _ = error "Not yet implemented"
 
 updateCounter :: (Counter -> Counter) -> InterpreterM ()
 updateCounter g = mapM_ (\tvar -> atomically' $ modifyTVar' tvar g) =<< get
