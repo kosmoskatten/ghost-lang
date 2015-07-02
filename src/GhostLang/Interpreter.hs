@@ -4,9 +4,12 @@ module GhostLang.Interpreter
     , execPattern
     ) where
 
+import Control.Monad (replicateM_)
 import GhostLang.InterpreterM ( InterpreterM
                               , incInstrInvoked
                               , incPatternRuns
+                              , incLoopRuns
+                              , evalValue
                               )
 import GhostLang.Types (Operation (..), Pattern (..))
 
@@ -28,5 +31,11 @@ instance InstructionSet a => InstructionSet (Operation a) where
     exec (Invoke instr) = do
       incInstrInvoked
       exec instr
+
+    -- Invoke a loop. Update counters accordingly.
+    exec (Loop times ops) = do
+      incLoopRuns
+      times' <- fromIntegral <$> evalValue times
+      replicateM_ times' $ mapM_ exec ops
 
     exec _ = undefined

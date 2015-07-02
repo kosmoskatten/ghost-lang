@@ -4,6 +4,7 @@ module Main
 
 import GhostLang.InterpreterTests ( simpleSequencePattern
                                   , manySimpleSequencePatterns
+                                  , nonNestedLoopPattern
                                   )
 import GhostLang.SerializationTests ( encodeDecodeIsEqual
                                     , writeReadFile
@@ -20,6 +21,7 @@ testSuite =
     [ testGroup "GhostLang.InterpreterTests"
       [ testProperty "SimpleSequencePattern" simpleSequencePattern
       , testProperty "ManySimpleSequencePatterns" manySimpleSequencePatterns
+      , testProperty "NonNestedLoopPattern" nonNestedLoopPattern
       ]
     , testGroup "GhostLang.SerializationTests"
       [ testProperty "EncodeDecodeIsEqual" encodeDecodeIsEqual

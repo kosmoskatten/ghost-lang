@@ -1,10 +1,12 @@
 module GhostLang.InterpreterTests
     ( simpleSequencePattern
     , manySimpleSequencePatterns
+    , nonNestedLoopPattern
     ) where
 
 import Control.Concurrent.STM (newTVarIO, readTVarIO)
 import Control.Monad (forM)
+import Data.List (foldl')
 import Data.Text (Text)
 import GHC.Int (Int64)
 import GhostLang.Counter ( Counter (..)
@@ -15,10 +17,11 @@ import GhostLang.Counter ( Counter (..)
                          )
 import GhostLang.Generators ( SimpleSequencePattern (..)
                             , ManySimpleSequencePatterns (..)
+                            , NonNestedLoopPattern (..)
                             )
 import GhostLang.Interpreter (execPattern)
 import GhostLang.InterpreterM (runInterpreter)
-import GhostLang.Types (Pattern (..))
+import GhostLang.Types (Value (..), Pattern (..), Operation (..))
 import Test.QuickCheck
 import Test.QuickCheck.Monadic
 
@@ -77,8 +80,39 @@ manySimpleSequencePatterns (ManySimpleSequencePatterns ps) =
       -- Also, the sum of the local counters shall be the same as well.
       assert $ totalPatterns == (sum $ map getTotalPatternRuns locals)
 
+-- | Property to the test the expansion and execution of loops.
+nonNestedLoopPattern :: NonNestedLoopPattern -> Property
+nonNestedLoopPattern (NonNestedLoopPattern p) =
+    monadicIO $ do
+      inpC    <- run (newTVarIO emptyCounter)
+      run (runInterpreter [inpC] $ execPattern p)
+      counter <- run (readTVarIO inpC)
+
+      -- Count the number of invoke operations and loop
+      -- operations.
+      let (invokes, loops) = countInvokesAndNonNestedLoops p
+
+      -- As many instructions invoked as invoke operations times the
+      -- loop expansions.
+      assert $ invokes == instrInvoked counter
+
+      -- As many loop instructions as found in the pattern.
+      assert $ loops == loopRuns counter
+
 opsLength :: Pattern a -> Int64
 opsLength (Pattern _ _ ops) = fromIntegral $ length ops
 
 patternName :: Pattern a -> Text
 patternName (Pattern name _ _) = name
+
+-- | Count the number of invoke instructions (incl. expanding the
+-- loops) and the number of loop commands.
+countInvokesAndNonNestedLoops :: Pattern a -> (Int64, Int64)
+countInvokesAndNonNestedLoops (Pattern _ _ ops) = foldl' count (0, 0) ops
+    where
+      count :: (Int64, Int64) -> Operation a -> (Int64, Int64)
+      count (x, y) (Invoke _)       = (x + 1, y)
+      count (x,y) (Loop times ops') =
+          let Const times' = times
+          in (x + fromIntegral (length ops') * times', y + 1)
+      count x _                     = x

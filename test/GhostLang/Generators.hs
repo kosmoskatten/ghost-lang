@@ -5,6 +5,7 @@ module GhostLang.Generators
     ( TestInstrSet (..)
     , SimpleSequencePattern (..)
     , ManySimpleSequencePatterns (..)
+    , NonNestedLoopPattern (..)
     ) where
 
 import Data.Serialize (Serialize (..))
@@ -58,6 +59,11 @@ instance Arbitrary a => Arbitrary (Operation a) where
                       , Unresolved <$> arbitrary
                       ]
 
+-- | Generate a label with at least length 1.
+instance Arbitrary Label where
+    arbitrary = pack <$> (listOf1 $ elements fromValidChars)
+        where fromValidChars = ['0'..'9'] ++ ['a'..'z'] ++ ['A'..'Z'] ++ "_.-"
+
 -- | Simple instruction set for testing purposes. The instructions
 -- shall have no side effects.
 data TestInstrSet = Instr1 | Instr2
@@ -94,10 +100,26 @@ simpleSequencePattern = Pattern <$> arbitrary
                                 <*> arbitrary
                                 <*> (listOf invokeOperation)
 
--- | Generate a label with at least length 1.
-instance Arbitrary Label where
-    arbitrary = pack <$> (listOf1 $ elements fromValidChars)
-        where fromValidChars = ['0'..'9'] ++ ['a'..'z'] ++ ['A'..'Z'] ++ "_.-"
+-- | Test case wrapper type. A sequence with simple instructions and
+-- non nested loops.
+data NonNestedLoopPattern =
+    NonNestedLoopPattern (Pattern TestInstrSet)
+    deriving Show
+
+instance Arbitrary NonNestedLoopPattern where
+    arbitrary = NonNestedLoopPattern <$> pattern'
+        where
+          pattern' = Pattern <$> arbitrary
+                             <*> arbitrary
+                             <*> (listOf $ oneof [ invokeOperation
+                                                 , nonNestedLoop
+                                                 ])
 
 invokeOperation :: Gen (Operation TestInstrSet)
 invokeOperation = Invoke <$> arbitrary
+
+nonNestedLoop :: Gen (Operation TestInstrSet)
+nonNestedLoop = Loop <$> value
+                     <*> (listOf invokeOperation)
+    where
+      value = Const <$> choose (0, 10)
