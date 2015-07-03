@@ -6,6 +6,7 @@ module GhostLang.Generators
     , SimpleSequencePattern (..)
     , ManySimpleSequencePatterns (..)
     , NonNestedLoopPattern (..)
+    , NonNestedConcPattern (..)
     ) where
 
 import Data.Serialize (Serialize (..))
@@ -48,6 +49,7 @@ instance Arbitrary a => Arbitrary (Procedure a) where
         where noCall = oneof [ Invoke <$> arbitrary
                              , Loop <$> arbitrary 
                                     <*> (listOf (Invoke <$> arbitrary))
+                             , Concurrently <$> (listOf (Invoke <$> arbitrary))
                              , Unresolved <$> arbitrary
                              ]
 
@@ -55,6 +57,7 @@ instance Arbitrary a => Arbitrary (Procedure a) where
 instance Arbitrary a => Arbitrary (Operation a) where
     arbitrary = oneof [ Invoke <$> arbitrary
                       , Loop <$> arbitrary <*> (listOf (Invoke <$> arbitrary))
+                      , Concurrently <$> (listOf (Invoke <$> arbitrary))
                       , Call <$> arbitrary
                       , Unresolved <$> arbitrary
                       ]
@@ -114,6 +117,22 @@ instance Arbitrary NonNestedLoopPattern where
                              <*> (listOf $ oneof [ invokeOperation
                                                  , nonNestedLoop
                                                  ])
+
+-- | Test case wrapper type. A sequence with simple instructions and
+-- non nested concurrency sections.
+data NonNestedConcPattern =
+    NonNestedConcPattern (Pattern TestInstrSet)
+    deriving Show
+
+instance Arbitrary NonNestedConcPattern where
+    arbitrary = NonNestedConcPattern <$> pattern
+        where
+          pattern = Pattern <$> arbitrary
+                            <*> arbitrary
+                            <*> (listOf $ oneof [ invokeOperation
+                                                , nonNestedConc
+                                                ])
+          nonNestedConc = Concurrently <$> (listOf invokeOperation)
 
 invokeOperation :: Gen (Operation TestInstrSet)
 invokeOperation = Invoke <$> arbitrary

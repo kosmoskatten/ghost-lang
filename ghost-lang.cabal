@@ -45,6 +45,7 @@ library
                        GhostLang.Serialize
                        GhostLang.Types
   build-depends:       base >= 4.7 && < 5
+                     , async
                      , cereal
                      , cereal-conduit
                      , conduit-combinators

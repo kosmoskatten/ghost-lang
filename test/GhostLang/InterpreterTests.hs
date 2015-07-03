@@ -2,6 +2,7 @@ module GhostLang.InterpreterTests
     ( simpleSequencePattern
     , manySimpleSequencePatterns
     , nonNestedLoopPattern
+    , nonNestedConcPattern
     ) where
 
 import Control.Concurrent.STM (newTVarIO, readTVarIO)
@@ -18,6 +19,7 @@ import GhostLang.Counter ( Counter (..)
 import GhostLang.Generators ( SimpleSequencePattern (..)
                             , ManySimpleSequencePatterns (..)
                             , NonNestedLoopPattern (..)
+                            , NonNestedConcPattern (..)
                             )
 import GhostLang.Interpreter (execPattern)
 import GhostLang.InterpreterM (runInterpreter)
@@ -38,8 +40,11 @@ simpleSequencePattern (SimpleSequencePattern p) =
       -- the list.
       assert $ (opsLength p) == instrInvoked counter
 
-      -- There shall be no loop runs.
-      assert $ 0 == loopRuns counter
+      -- There shall be no loop commands counted.
+      assert $ 0 == loopCmds counter
+
+      -- There shall be no concurrently commands counted.
+      assert $ 0 == concCmds counter
 
       -- This pattern shall have been run once.
       assert $ 1 == getPatternRuns (patternName p) counter
@@ -96,8 +101,33 @@ nonNestedLoopPattern (NonNestedLoopPattern p) =
       -- loop expansions.
       assert $ invokes == instrInvoked counter
 
-      -- As many loop instructions as found in the pattern.
-      assert $ loops == loopRuns counter
+      -- As many loop commands as found in the pattern.
+      assert $ loops == loopCmds counter
+
+      -- No concurrently commands shall have been counted.
+      assert $ 0 == concCmds counter
+
+-- | Property to test the expansion and execution of concurrent
+-- sections.
+nonNestedConcPattern :: NonNestedConcPattern -> Property
+nonNestedConcPattern (NonNestedConcPattern p) =
+    monadicIO $ do
+      inpC    <- run (newTVarIO emptyCounter)
+      run (runInterpreter [inpC] $ execPattern p)
+      counter <- run (readTVarIO inpC)
+
+      -- Count the number of invoke operations and concurrently
+      -- commands.
+      let (invokes, concs) = countInvokesAndNonNestedConcs p
+          
+      -- As many instructions invoked as found.
+      assert $ invokes == instrInvoked counter
+
+      -- No loops
+      assert $ 0 == loopCmds counter
+
+      -- As many concurrent commands as found in the pattern.
+      assert $ concs == concCmds counter
 
 opsLength :: Pattern a -> Int64
 opsLength (Pattern _ _ ops) = fromIntegral $ length ops
@@ -111,8 +141,18 @@ countInvokesAndNonNestedLoops :: Pattern a -> (Int64, Int64)
 countInvokesAndNonNestedLoops (Pattern _ _ ops) = foldl' count (0, 0) ops
     where
       count :: (Int64, Int64) -> Operation a -> (Int64, Int64)
-      count (x, y) (Invoke _)       = (x + 1, y)
-      count (x,y) (Loop times ops') =
+      count (x, y) (Invoke _)        = (x + 1, y)
+      count (x, y) (Loop times ops') =
           let Const times' = times
           in (x + fromIntegral (length ops') * times', y + 1)
       count x _                     = x
+
+-- | Count the number of invoke instructions (incl. expanding the
+-- concurrent sections) and the number of concurrently commands.
+countInvokesAndNonNestedConcs :: Pattern a -> (Int64, Int64)
+countInvokesAndNonNestedConcs (Pattern _ _ ops) = foldl' count (0, 0) ops
+    where
+      count :: (Int64, Int64) -> Operation a -> (Int64, Int64)
+      count (x, y) (Invoke _)          = (x + 1, y)
+      count (x, y) (Concurrently ops') = (x + fromIntegral (length ops'), y + 1)
+      count x _                        = x

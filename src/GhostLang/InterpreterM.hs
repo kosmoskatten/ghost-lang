@@ -6,12 +6,16 @@ module GhostLang.InterpreterM
 
       -- API towards ghost-lang interpretation. Counters:
     , incInstrInvoked
-    , incLoopRuns
+    , incLoopCmds
+    , incConcCmds
     , incPatternRuns
     , incProcCalls
 
       -- Value evaluation:
     , evalValue
+
+    , get
+    , liftIO
     ) where
 
 import Control.Concurrent.STM ( STM
@@ -33,7 +37,8 @@ import Data.Text (Text)
 import GHC.Int (Int64)
 import GhostLang.Counter ( Counter (..) 
                          , incInstrInvoked'
-                         , incLoopRuns'
+                         , incLoopCmds'
+                         , incConcCmds'
                          , incPatternRuns'
                          , incProcCalls'
                          )
@@ -61,9 +66,13 @@ runInterpreter counters interpreter =
 incInstrInvoked :: InterpreterM ()
 incInstrInvoked = updateCounter incInstrInvoked'
 
--- | Increase counter for the number of loop runs.
-incLoopRuns :: InterpreterM ()
-incLoopRuns = updateCounter incLoopRuns'
+-- | Increase counter for the number of loop commands.
+incLoopCmds :: InterpreterM ()
+incLoopCmds = updateCounter incLoopCmds'
+
+-- | Increase the counter for the number of concurrently commands.
+incConcCmds :: InterpreterM ()
+incConcCmds = updateCounter incConcCmds'
 
 -- | Increase the counter for executed patterns.
 incPatternRuns :: Text -> InterpreterM ()

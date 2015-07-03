@@ -63,6 +63,10 @@ data Operation a where
     -- ^ Loop the set of operations the number of times specified by
     -- the value.
 
+    Concurrently :: ![Operation a] -> Operation a
+    -- ^ Concurrently execute the operations. The Concurrently command
+    -- is ready when the last concurrent operation is done.
+
     Call :: !(Procedure a) -> Operation a
     -- ^ Call is the operation of calling a procedure. The procedure
     -- is given its arguments in a local context of the Interpreter
