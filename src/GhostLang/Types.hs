@@ -23,8 +23,8 @@ type Label = Text
 type Weight = Int
 
 -- | Representation of numeric values in ghost-lang.
-data Value = Const !Int64
-           -- ^ A constant, immediate, value.
+data Value = Literal !Int64
+           -- ^ A constant, literal, value.
            | Uniform !Int64 !Int64
            -- ^ A randomly - uniform - distributed value.
            | Gaussian !Int64 !Int64

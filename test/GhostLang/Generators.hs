@@ -25,7 +25,7 @@ import Test.QuickCheck
 
 -- | Arbitrary instance for Value.
 instance Arbitrary Value where
-    arbitrary = oneof [ Const <$> posInt
+    arbitrary = oneof [ Literal <$> posInt
                       , Uniform <$> posInt <*> posInt
                       , Gaussian <$> posInt <*> posInt
                       , Ind <$> arbitrary
@@ -141,4 +141,4 @@ nonNestedLoop :: Gen (Operation TestInstrSet)
 nonNestedLoop = Loop <$> value
                      <*> (listOf invokeOperation)
     where
-      value = Const <$> choose (0, 10)
+      value = Literal <$> choose (0, 10)

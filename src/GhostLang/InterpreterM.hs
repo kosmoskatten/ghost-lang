@@ -42,15 +42,16 @@ import GhostLang.Counter ( Counter (..)
                          , incPatternRuns'
                          , incProcCalls'
                          )
+import GhostLang.Scope (Scope, emptyScope)
 import GhostLang.Types (Value (..))
 
 -- | Interpreter monad type for interpretation of instructions
 -- implementing the InstructionSet type class.
 newtype InterpreterM a = 
     InterpreterM 
-      { extractInterpreterM :: ReaderT Int (StateT State IO) a }
+      { extractInterpreterM :: ReaderT Scope (StateT State IO) a }
   deriving (Functor, Applicative, Monad
-           , MonadReader Int, MonadState State, MonadIO)
+           , MonadReader Scope, MonadState State, MonadIO)
 
 -- | Type alias for the interpreter state.
 type State = [TVar Counter]
@@ -60,7 +61,7 @@ type State = [TVar Counter]
 -- counters in exactly the same order as when supplied.
 runInterpreter :: State -> InterpreterM () -> IO ()
 runInterpreter counters interpreter =
-  evalStateT (runReaderT (extractInterpreterM interpreter) 0) counters
+  evalStateT (runReaderT (extractInterpreterM interpreter) emptyScope) counters
 
 -- | Increase the counter for invoked instructions.
 incInstrInvoked :: InterpreterM ()
@@ -84,7 +85,7 @@ incProcCalls name = updateCounter $ incProcCalls' name
 
 -- | Evaluate a value.
 evalValue :: Value -> InterpreterM Int64
-evalValue (Const x) = return x
+evalValue (Literal x) = return x
 evalValue _ = error "Not yet implemented"
 
 updateCounter :: (Counter -> Counter) -> InterpreterM ()

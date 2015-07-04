@@ -143,7 +143,7 @@ countInvokesAndNonNestedLoops (Pattern _ _ ops) = foldl' count (0, 0) ops
       count :: (Int64, Int64) -> Operation a -> (Int64, Int64)
       count (x, y) (Invoke _)        = (x + 1, y)
       count (x, y) (Loop times ops') =
-          let Const times' = times
+          let Literal times' = times
           in (x + fromIntegral (length ops') * times', y + 1)
       count x _                     = x
 
