@@ -28,7 +28,7 @@ instance Arbitrary Value where
     arbitrary = oneof [ Literal <$> posInt
                       , Uniform <$> posInt <*> posInt
                       , Gaussian <$> posInt <*> posInt
-                      , Ind <$> arbitrary
+                      , Stored <$> arbitrary
                       ]
         where
           posInt :: Gen Int64
@@ -45,12 +45,14 @@ instance Arbitrary a => Arbitrary (Pattern a) where
 -- | Arbitrary instance for Procedure. Limited in randomness to avoid
 -- infinite recursion.
 instance Arbitrary a => Arbitrary (Procedure a) where
-    arbitrary = Procedure <$> arbitrary <*> (listOf noCall)
+    arbitrary = Procedure <$> arbitrary 
+                          <*> (listOf arbitrary)
+                          <*> (listOf noCall)
         where noCall = oneof [ Invoke <$> arbitrary
                              , Loop <$> arbitrary 
                                     <*> (listOf (Invoke <$> arbitrary))
                              , Concurrently <$> (listOf (Invoke <$> arbitrary))
-                             , Unresolved <$> arbitrary
+                             , Unresolved <$> arbitrary <*> (listOf arbitrary)
                              ]
 
 -- | Arbitrary instance for Operation.
@@ -58,8 +60,8 @@ instance Arbitrary a => Arbitrary (Operation a) where
     arbitrary = oneof [ Invoke <$> arbitrary
                       , Loop <$> arbitrary <*> (listOf (Invoke <$> arbitrary))
                       , Concurrently <$> (listOf (Invoke <$> arbitrary))
-                      , Call <$> arbitrary
-                      , Unresolved <$> arbitrary
+                      , Call <$> arbitrary <*> (listOf arbitrary)
+                      , Unresolved <$> arbitrary <*> (listOf arbitrary)
                       ]
 
 -- | Generate a label with at least length 1.

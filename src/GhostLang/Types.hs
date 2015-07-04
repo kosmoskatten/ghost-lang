@@ -29,9 +29,9 @@ data Value = Literal !Int64
            -- ^ A randomly - uniform - distributed value.
            | Gaussian !Int64 !Int64
            -- ^ A randomly - normal - distributed value.
-           | Ind !Label
-            -- ^ An indirect value, looked up by name. After lookup is
-            -- become some of the above.
+           | Stored !Label
+            -- ^ An indirect value, looked up from store by
+            -- name. After lookup is become one of the above.
     deriving (Eq, Generic, Show)
 
 -- | A representation of a ghost-lang program. A program has a name
@@ -47,9 +47,10 @@ data Pattern a where
     deriving (Eq, Generic, Show)
 
 -- | Procedure is a ghost-lang construct for making reusable building
--- blocks. A procedure is carrying a set of operations.
+-- blocks. A procedure is carrying a set of parameter names and a set
+-- of operations.
 data Procedure a where
-    Procedure :: !Label -> ![Operation a] -> Procedure a
+    Procedure :: !Label -> ![Label] -> ![Operation a] -> Procedure a
     deriving (Eq, Generic, Show)
 
 -- | Operation is the lowest level entity that can be controlled in a
@@ -67,12 +68,12 @@ data Operation a where
     -- ^ Concurrently execute the operations. The Concurrently command
     -- is ready when the last concurrent operation is done.
 
-    Call :: !(Procedure a) -> Operation a
+    Call :: !(Procedure a) -> ![Value] -> Operation a
     -- ^ Call is the operation of calling a procedure. The procedure
     -- is given its arguments in a local context of the Interpreter
     -- monad.
 
-    Unresolved :: !Label -> Operation a
+    Unresolved :: !Label -> ![Value] -> Operation a
     -- ^ Unresolved procedure.
     deriving (Eq, Generic, Show)
 
