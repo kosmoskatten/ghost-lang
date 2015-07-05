@@ -6,6 +6,8 @@ import GhostLang.InterpreterTests ( simpleSequencePattern
                                   , manySimpleSequencePatterns
                                   , nonNestedLoopPattern
                                   , nonNestedConcPattern
+                                  , oneLevelCallNoParamsPattern
+                                  , oneLevelCallOneParamPattern
                                   )
 import GhostLang.SerializationTests ( encodeDecodeIsEqual
                                     , writeReadFile
@@ -24,6 +26,8 @@ testSuite =
       , testProperty "ManySimpleSequencePatterns" manySimpleSequencePatterns
       , testProperty "NonNestedLoopPattern" nonNestedLoopPattern
       , testProperty "NonNestedConcPattern" nonNestedConcPattern
+      , testCase "OneLevelCallNoParamsPattern" oneLevelCallNoParamsPattern
+      , testCase "OneLevelCallOneParamPattern" oneLevelCallOneParamPattern
       ]
     , testGroup "GhostLang.SerializationTests"
       [ testProperty "EncodeDecodeIsEqual" encodeDecodeIsEqual

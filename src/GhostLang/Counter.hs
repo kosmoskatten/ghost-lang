@@ -6,6 +6,7 @@ module GhostLang.Counter
     , incLoopCmds'
     , incConcCmds'
     , incProcCalls'
+    , getProcCalls
     , getTotalProcCalls
     , incPatternRuns'
     , getPatternRuns
@@ -64,6 +65,10 @@ incProcCalls' :: Text -> Counter -> Counter
 incProcCalls' p c@Counter {..} =
     let g = maybe (Just 1) (Just . (1 +))
     in c { procCalls = Map.alter g p procCalls }
+
+-- | Get the value for the procedure call counter for procedure 'p'.
+getProcCalls :: Text -> Counter -> Int64
+getProcCalls p Counter {..} = maybe 0 id (Map.lookup p procCalls)
 
 -- | Get the total number of procedure calls.
 getTotalProcCalls :: Counter -> Int64

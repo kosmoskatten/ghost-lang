@@ -6,6 +6,7 @@ module GhostLang.Interpreter
 
 import Control.Concurrent.Async (async, wait)
 import Control.Monad (replicateM_)
+import Data.Maybe (fromJust)
 import GhostLang.InterpreterM ( InterpreterM
                               , State
                               , runInterpreter
@@ -13,11 +14,21 @@ import GhostLang.InterpreterM ( InterpreterM
                               , incPatternRuns
                               , incLoopCmds
                               , incConcCmds
+                              , incProcCalls
                               , evalValue
+                              , ask
                               , get
+                              , local
                               , liftIO
                               )
-import GhostLang.Types (Operation (..), Pattern (..))
+import GhostLang.Types ( Label
+                       , Value (..)
+                       , Operation (..)
+                       , Pattern (..)
+                       , Procedure (..)
+                       )
+import GhostLang.Scope (fromList, lookup)
+import Prelude hiding (lookup)
 
 -- | Instruction set type class.
 class InstructionSet a where
@@ -32,7 +43,7 @@ execPattern (Pattern name _ ops) = do
 execOperation :: InstructionSet a => Operation a -> InterpreterM ()
 execOperation = exec
 
--- | Implementation of the InstructionSet for the Operation level
+-- | Implementation of the InstructionSet interpreter for the Operation level
 -- instructions.
 instance InstructionSet a => InstructionSet (Operation a) where
     -- Invoke one instruction from the instruction set. Update
@@ -52,6 +63,31 @@ instance InstructionSet a => InstructionSet (Operation a) where
       incConcCmds
       state <- get
       liftIO $ concurrently state ops
+
+    -- Invoke a procedure call. Update counters accordingly.
+    exec (Call proc argValues) = do
+      -- The procedure itself carries a list of names for its
+      -- arguments. The call is carrying a list of values. Zip'em to
+      -- form a list of pairs.
+      let Procedure procName argNames ops = proc
+          pairs = argNames `zip` argValues
+
+      -- Copy the values and name them correctly into a new
+      -- scope. Some values may need to be copied from the current
+      -- scope.
+      scope <- fromList <$> mapM copyValue pairs
+
+      incProcCalls procName
+      
+      -- Run the procedure inside its new scope.
+      local (\_ -> scope) $ mapM_ exec ops
+          where
+            copyValue :: (Label, Value) -> InterpreterM (Label, Value)
+            copyValue (label, Stored label') = do
+                -- Stored value. Copy value from current scope.
+                value' <- fromJust . lookup label' <$> ask
+                return (label, value')
+            copyValue v = return v
 
     exec _ = undefined
 

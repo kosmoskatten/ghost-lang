@@ -14,7 +14,9 @@ module GhostLang.InterpreterM
       -- Value evaluation:
     , evalValue
 
+    , ask
     , get
+    , local
     , liftIO
     ) where
 
@@ -26,6 +28,8 @@ import Control.Concurrent.STM ( STM
 import Control.Monad.Reader ( MonadReader
                             , ReaderT
                             , runReaderT
+                            , ask
+                            , local
                             )
 import Control.Monad.State ( MonadState
                            , StateT
@@ -42,8 +46,9 @@ import GhostLang.Counter ( Counter (..)
                          , incPatternRuns'
                          , incProcCalls'
                          )
-import GhostLang.Scope (Scope, emptyScope)
+import GhostLang.Scope (Scope, emptyScope, lookup)
 import GhostLang.Types (Value (..))
+import Prelude hiding (lookup)
 
 -- | Interpreter monad type for interpretation of instructions
 -- implementing the InstructionSet type class.
@@ -86,6 +91,12 @@ incProcCalls name = updateCounter $ incProcCalls' name
 -- | Evaluate a value.
 evalValue :: Value -> InterpreterM Int64
 evalValue (Literal x) = return x
+evalValue (Stored x) = do
+  v <- lookup x <$> ask
+  case v of
+    Just v' -> evalValue v'
+    _       -> error $ "Cannot lookup stored value: " ++ show x
+  
 evalValue _ = error "Not yet implemented"
 
 updateCounter :: (Counter -> Counter) -> InterpreterM ()
