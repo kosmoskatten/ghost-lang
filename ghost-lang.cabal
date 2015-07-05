@@ -19,6 +19,7 @@ test-suite ghost-lang-test
   main-is:             Spec.hs
   other-modules:       GhostLang.Generators
                        GhostLang.InterpreterTests
+                       GhostLang.InterpreterProps
                        GhostLang.SerializationTests
   build-depends:       base
                      , cereal

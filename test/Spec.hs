@@ -2,11 +2,12 @@ module Main
     ( main
     ) where
 
-import GhostLang.InterpreterTests ( simpleSequencePattern
+import GhostLang.InterpreterProps ( simpleSequencePattern
                                   , manySimpleSequencePatterns
                                   , nonNestedLoopPattern
                                   , nonNestedConcPattern
-                                  , oneLevelCallNoParamsPattern
+                                  )
+import GhostLang.InterpreterTests ( oneLevelCallNoParamsPattern
                                   , oneLevelCallOneParamPattern
                                   )
 import GhostLang.SerializationTests ( encodeDecodeIsEqual
@@ -21,12 +22,14 @@ main = defaultMain testSuite
 
 testSuite :: [Test]
 testSuite =
-    [ testGroup "GhostLang.InterpreterTests"
+    [ testGroup "GhostLang.InterpreterProps"
       [ testProperty "SimpleSequencePattern" simpleSequencePattern
       , testProperty "ManySimpleSequencePatterns" manySimpleSequencePatterns
       , testProperty "NonNestedLoopPattern" nonNestedLoopPattern
       , testProperty "NonNestedConcPattern" nonNestedConcPattern
-      , testCase "OneLevelCallNoParamsPattern" oneLevelCallNoParamsPattern
+      ]
+    , testGroup "GhostLang.InterpreterTests"
+      [ testCase "OneLevelCallNoParamsPattern" oneLevelCallNoParamsPattern
       , testCase "OneLevelCallOneParamPattern" oneLevelCallOneParamPattern
       ]
     , testGroup "GhostLang.SerializationTests"
