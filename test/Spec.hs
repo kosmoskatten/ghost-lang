@@ -9,6 +9,9 @@ import GhostLang.InterpreterProps ( simpleSequencePattern
                                   )
 import GhostLang.InterpreterTests ( oneLevelCallNoParamsPattern
                                   , oneLevelCallOneParamPattern
+                                  , localScopeOneParamPattern
+                                  , twoLevelTwoParamsPattern
+                                  , longChainTwoParamsPattern
                                   )
 import GhostLang.SerializationTests ( encodeDecodeIsEqual
                                     , writeReadFile
@@ -31,6 +34,9 @@ testSuite =
     , testGroup "GhostLang.InterpreterTests"
       [ testCase "OneLevelCallNoParamsPattern" oneLevelCallNoParamsPattern
       , testCase "OneLevelCallOneParamPattern" oneLevelCallOneParamPattern
+      , testCase "LocalScopeOneParamPattern" localScopeOneParamPattern
+      , testCase "TwoLevelTwoParamsPattern" twoLevelTwoParamsPattern
+      , testCase "LongChainTwoParamsPattern" longChainTwoParamsPattern
       ]
     , testGroup "GhostLang.SerializationTests"
       [ testProperty "EncodeDecodeIsEqual" encodeDecodeIsEqual

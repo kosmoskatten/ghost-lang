@@ -14,11 +14,9 @@ import GhostLang.Counter ( Counter (..)
                          , emptyCounter
                          , getPatternRuns
                          , getTotalPatternRuns
-                         , getProcCalls
                          , getTotalProcCalls
                          )
-import GhostLang.Generators ( TestInstrSet (..) 
-                            , SimpleSequencePattern (..)
+import GhostLang.Generators ( SimpleSequencePattern (..)
                             , ManySimpleSequencePatterns (..)
                             , NonNestedLoopPattern (..)
                             , NonNestedConcPattern (..)
