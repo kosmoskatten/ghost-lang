@@ -3,7 +3,9 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module GhostLang.Types
     ( Label
+    , ModuleSegment
     , Weight
+    , ModuleDecl (..)
     , Value (..)
     , Program (..)
     , Pattern (..)
@@ -19,8 +21,14 @@ import GHC.Int (Int64)
 
 import qualified Data.Text as T
 
-type Label = Text
-type Weight = Int
+type Label         = Text
+type ModuleSegment = Text
+type Weight        = Int
+
+-- | A module declaration, specifying the full path name of the
+-- module.
+newtype ModuleDecl = ModuleDecl [ModuleSegment]
+    deriving (Eq, Generic, Show)
 
 -- | Representation of numeric values in ghost-lang.
 data Value = Literal !Int64

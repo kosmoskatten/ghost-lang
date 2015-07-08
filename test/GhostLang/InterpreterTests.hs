@@ -13,7 +13,7 @@ import GhostLang.Counter ( Counter (..)
                          , getProcCalls
                          , getTotalProcCalls
                          )
-import GhostLang.Generators (TestInstrSet (..))
+import GhostLang.InterpreterGenerators (TestInstrSet (..))
 import GhostLang.Interpreter (execPattern)
 import GhostLang.InterpreterM (runInterpreter)
 import GhostLang.Types ( Value (..)

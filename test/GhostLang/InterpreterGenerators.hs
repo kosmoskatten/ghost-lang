@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric        #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module GhostLang.Generators 
+module GhostLang.InterpreterGenerators 
     ( TestInstrSet (..)
     , SimpleSequencePattern (..)
     , ManySimpleSequencePatterns (..)

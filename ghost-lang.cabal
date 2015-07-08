@@ -17,9 +17,10 @@ test-suite ghost-lang-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  other-modules:       GhostLang.Generators
+  other-modules:       GhostLang.InterpreterGenerators
                        GhostLang.InterpreterTests
                        GhostLang.InterpreterProps
+                       GhostLang.ParserGenerators
                        GhostLang.SerializationTests
   build-depends:       base
                      , cereal
@@ -27,6 +28,7 @@ test-suite ghost-lang-test
                      , ghost-lang
                      , filepath
                      , HUnit
+                     , parsec
                      , stm
                      , test-framework
                      , test-framework-hunit
@@ -46,6 +48,8 @@ library
                        GhostLang.Scope
                        GhostLang.Serialize
                        GhostLang.Types
+                       GhostLang.Parser.Grammar
+                       GhostLang.Parser.Tokenizer
   build-depends:       base >= 4.7 && < 5
                      , async
                      , cereal
@@ -53,9 +57,10 @@ library
                      , conduit-combinators
                      , containers
                      , mtl
+                     , parsec
+                     , stm
                      , text
                      , transformers
-                     , stm
   default-language:    Haskell2010
   ghc-options:         -Wall
 

@@ -6,7 +6,7 @@ module GhostLang.SerializationTests
 
 import Control.Exception (bracket)
 import Data.Serialize (decode, encode)
-import GhostLang.Generators (TestInstrSet (..))
+import GhostLang.InterpreterGenerators (TestInstrSet (..))
 import GhostLang.Serialize (fromFile, toFile)
 import GhostLang.Types (Program (..), Pattern (..), Operation (..))
 import System.Directory (getTemporaryDirectory, removeFile)
