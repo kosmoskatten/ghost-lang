@@ -22,6 +22,7 @@ tokenizer =
     , Token.identLetter   = alphaNum <|> oneOf "-_"
     , Token.reservedNames =
         [ "module"
+        , "import"
         ]
     , Token.caseSensitive = True
     }

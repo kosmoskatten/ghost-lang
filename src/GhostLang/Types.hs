@@ -6,6 +6,7 @@ module GhostLang.Types
     , ModuleSegment
     , Weight
     , ModuleDecl (..)
+    , ImportDecl (..)
     , Value (..)
     , Program (..)
     , Pattern (..)
@@ -28,6 +29,11 @@ type Weight        = Int
 -- | A module declaration, specifying the full path name of the
 -- module.
 newtype ModuleDecl = ModuleDecl [ModuleSegment]
+    deriving (Eq, Generic, Show)
+
+-- | An import declaration, specifying the full path name of the
+-- imported module.
+newtype ImportDecl = ImportDecl [ModuleSegment]
     deriving (Eq, Generic, Show)
 
 -- | Representation of numeric values in ghost-lang.

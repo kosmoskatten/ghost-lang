@@ -13,7 +13,9 @@ import GhostLang.InterpreterTests ( oneLevelCallNoParamsPattern
                                   , twoLevelTwoParamsPattern
                                   , longChainTwoParamsPattern
                                   )
-import GhostLang.ParserProps ( moduleDeclaration )
+import GhostLang.ParserProps ( moduleDeclaration
+                             , importDeclaration
+                             )
 import GhostLang.SerializationTests ( encodeDecodeIsEqual
                                     , writeReadFile
                                     )
@@ -41,6 +43,7 @@ testSuite =
       ]
     , testGroup "GhostLang.ParserProps"
       [ testProperty "ModuleDeclaration" moduleDeclaration
+      , testProperty "ImportDeclaration" importDeclaration
       ]
     , testGroup "GhostLang.SerializationTests"
       [ testProperty "EncodeDecodeIsEqual" encodeDecodeIsEqual
