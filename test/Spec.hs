@@ -13,6 +13,7 @@ import GhostLang.InterpreterTests ( oneLevelCallNoParamsPattern
                                   , twoLevelTwoParamsPattern
                                   , longChainTwoParamsPattern
                                   )
+import GhostLang.IntrinsicTests (delayCommand)
 import GhostLang.ParserProps ( ghostModuleDefinition
                              , moduleDeclaration
                              , importDeclaration
@@ -41,6 +42,9 @@ testSuite =
       , testCase "LocalScopeOneParamPattern" localScopeOneParamPattern
       , testCase "TwoLevelTwoParamsPattern" twoLevelTwoParamsPattern
       , testCase "LongChainTwoParamsPattern" longChainTwoParamsPattern
+      ]
+    , testGroup "GhostLang.IntrinsicTests"
+      [ testCase "DelayCommand" delayCommand
       ]
     , testGroup "GhostLang.ParserProps"
       [ testProperty "GhostModuleDefinition" ghostModuleDefinition
