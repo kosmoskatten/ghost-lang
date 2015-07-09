@@ -5,6 +5,7 @@ module GhostLang.ParserGenerators where
 
 import Control.Monad (forM_)
 import Control.Monad.Writer (execWriter, tell)
+import GhostLang.Intrinsic (IntrinsicSet)
 import GhostLang.Types ( ModuleSegment
                        , GhostModule (..)
                        , ModuleDecl (..)
@@ -20,8 +21,9 @@ class Stringify a where
     stringify :: a -> String
 
 -- | Arbitrary instance for GhostModule.
-instance Arbitrary GhostModule where
+instance Arbitrary (GhostModule a) where
     arbitrary = GhostModule <$> arbitrary <*> listOf arbitrary
+                            <*> pure []   <*> pure []
 
 -- | Arbitrary instance for ModuleDecl.
 instance Arbitrary ModuleDecl where
@@ -41,8 +43,8 @@ instance Arbitrary ModuleSegment where
                   <*> listOf (elements $ ['a'..'z'] ++
                                          ['0'..'9'] ++ "-_")
 
-instance Stringify GhostModule where
-    stringify (GhostModule modDecl impDecls) =
+instance Stringify (GhostModule a) where
+    stringify (GhostModule modDecl impDecls _ _) =
         execWriter $ do
           tell $ printf "%s\n\n" (stringify modDecl)
           forM_ impDecls $ \impDecl ->

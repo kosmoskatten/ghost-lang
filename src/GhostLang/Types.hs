@@ -29,8 +29,9 @@ type Weight        = Int
 
 -- | Description of a ghost-lang module. This is the representation
 -- produced of the parser when reading a gl-file.
-data GhostModule where
-    GhostModule :: ModuleDecl -> [ImportDecl] -> GhostModule
+data GhostModule a where
+    GhostModule :: ModuleDecl -> [ImportDecl] 
+                -> [Pattern a] -> [Procedure a] -> GhostModule a
     deriving (Eq, Generic, Show)
 
 -- | A module declaration, specifying the full path name of the

@@ -4,6 +4,7 @@ module GhostLang.ParserProps
     , importDeclaration
     ) where
 
+import GhostLang.Intrinsic (IntrinsicSet)
 import GhostLang.Types ( GhostModule (..)
                        , ModuleDecl (..)
                        , ImportDecl (..)
@@ -16,7 +17,7 @@ import GhostLang.ParserGenerators
 import Text.Parsec (parse)
 
 -- | Property to test the top level ghostModuleDef parser,
-ghostModuleDefinition :: GhostModule -> Bool
+ghostModuleDefinition :: GhostModule IntrinsicSet -> Bool
 ghostModuleDefinition g =
     case parse ghostModuleDef "" (stringify g) of
       Right g' -> g == g'

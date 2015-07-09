@@ -46,6 +46,7 @@ library
                        GhostLang.Counter
                        GhostLang.Interpreter
                        GhostLang.InterpreterM
+                       GhostLang.Intrinsic
                        GhostLang.Scope
                        GhostLang.Serialize
                        GhostLang.Types

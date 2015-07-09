@@ -4,6 +4,7 @@ module GhostLang.Parser.Grammar
     , importDecl
     ) where
 
+import GhostLang.Intrinsic (IntrinsicSet)
 import GhostLang.Types ( GhostModule (..)
                        , ModuleDecl (..)
                        , ImportDecl (..)
@@ -14,10 +15,10 @@ import Text.Parsec.String (Parser)
 
 -- | Parse a ghost module definition. I.e. the main structure for a
 -- ghost-lang module.
-ghostModuleDef :: Parser GhostModule
+ghostModuleDef :: Parser (GhostModule IntrinsicSet)
 ghostModuleDef = do
   whiteSpace
-  GhostModule <$> moduleDecl <*> many importDecl
+  GhostModule <$> moduleDecl <*> many importDecl <*> pure [] <*> pure []
 
 -- | Parse a module declaration. I.e. the keyword "module" followed by a
 -- module path.
