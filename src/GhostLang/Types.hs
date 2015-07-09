@@ -5,6 +5,7 @@ module GhostLang.Types
     ( Label
     , ModuleSegment
     , Weight
+    , GhostModule (..)
     , ModuleDecl (..)
     , ImportDecl (..)
     , Value (..)
@@ -25,6 +26,12 @@ import qualified Data.Text as T
 type Label         = Text
 type ModuleSegment = Text
 type Weight        = Int
+
+-- | Description of a ghost-lang module. This is the representation
+-- produced of the parser when reading a gl-file.
+data GhostModule where
+    GhostModule :: ModuleDecl -> [ImportDecl] -> GhostModule
+    deriving (Eq, Generic, Show)
 
 -- | A module declaration, specifying the full path name of the
 -- module.

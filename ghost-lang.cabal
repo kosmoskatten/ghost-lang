@@ -28,6 +28,7 @@ test-suite ghost-lang-test
                      , ghost-lang
                      , filepath
                      , HUnit
+                     , mtl
                      , parsec
                      , stm
                      , test-framework

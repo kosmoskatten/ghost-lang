@@ -1,12 +1,21 @@
 module GhostLang.Parser.Grammar
-    ( moduleDecl
+    ( ghostModuleDef
+    , moduleDecl
     , importDecl
     ) where
 
-import GhostLang.Types (ModuleDecl (..), ImportDecl (..))
+import GhostLang.Types ( GhostModule (..)
+                       , ModuleDecl (..)
+                       , ImportDecl (..)
+                       )
 import GhostLang.Parser.Tokenizer (moduleSegment, reserved)
 import Text.Parsec
 import Text.Parsec.String (Parser)
+
+-- | Parse a ghost module definition. I.e. the main structure for a
+-- ghost-lang module.
+ghostModuleDef :: Parser GhostModule
+ghostModuleDef = GhostModule <$> moduleDecl <*> many importDecl
 
 -- | Parse a module declaration. I.e. the keyword "module" followed by a
 -- module path.

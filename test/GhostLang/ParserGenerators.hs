@@ -3,7 +3,10 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module GhostLang.ParserGenerators where
 
+import Control.Monad (forM_)
+import Control.Monad.Writer (execWriter, tell)
 import GhostLang.Types ( ModuleSegment
+                       , GhostModule (..)
                        , ModuleDecl (..)
                        , ImportDecl (..)
                        )
@@ -15,6 +18,10 @@ import qualified Data.Text as T
 -- syntax.
 class Stringify a where
     stringify :: a -> String
+
+-- | Arbitrary instance for GhostModule.
+instance Arbitrary GhostModule where
+    arbitrary = GhostModule <$> arbitrary <*> listOf arbitrary
 
 -- | Arbitrary instance for ModuleDecl.
 instance Arbitrary ModuleDecl where
@@ -33,6 +40,13 @@ instance Arbitrary ModuleSegment where
               (:) <$> elements ['A'..'Z']
                   <*> listOf (elements $ ['a'..'z'] ++
                                          ['0'..'9'] ++ "-_")
+
+instance Stringify GhostModule where
+    stringify (GhostModule modDecl impDecls) =
+        execWriter $ do
+          tell $ printf "%s\n\n" (stringify modDecl)
+          forM_ impDecls $ \impDecl ->
+              tell $ printf "%s\n" (stringify impDecl)
 
 instance Stringify ModuleDecl where
     stringify (ModuleDecl segs) = printf "module %s" (str segs)

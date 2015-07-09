@@ -1,12 +1,26 @@
 module GhostLang.ParserProps 
-    ( moduleDeclaration
+    ( ghostModuleDefinition
+    , moduleDeclaration
     , importDeclaration
     ) where
 
-import GhostLang.Types (ModuleDecl (..), ImportDecl (..))
-import GhostLang.Parser.Grammar (moduleDecl, importDecl)
+import GhostLang.Types ( GhostModule (..)
+                       , ModuleDecl (..)
+                       , ImportDecl (..)
+                       )
+import GhostLang.Parser.Grammar ( ghostModuleDef
+                                , moduleDecl
+                                , importDecl
+                                )
 import GhostLang.ParserGenerators
 import Text.Parsec (parse)
+
+-- | Property to test the top level ghostModuleDef parser,
+ghostModuleDefinition :: GhostModule -> Bool
+ghostModuleDefinition g =
+    case parse ghostModuleDef "" (stringify g) of
+      Right g' -> g == g'
+      _        -> False
 
 -- | Property to test the moduleDecl parser.
 moduleDeclaration :: ModuleDecl -> Bool
