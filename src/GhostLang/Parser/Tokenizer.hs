@@ -1,6 +1,7 @@
 module GhostLang.Parser.Tokenizer 
     ( moduleSegment
     , reserved
+    , whiteSpace
     ) where
 
 import Control.Monad (when)
@@ -11,6 +12,22 @@ import Text.Parsec.Language (emptyDef)
 import Text.Parsec.String (Parser)
 import qualified Data.Text as Text
 import qualified Text.Parsec.Token as Token
+
+-- | Parse one module segment from the stream.
+moduleSegment :: Parser ModuleSegment
+moduleSegment = do
+  str <- identifier
+  when (isLower $ head str) $ 
+       parserFail "Module part must start with capital letter"
+  return $ Text.pack str
+
+-- | Try to parse the given string as a reserved work from the stream.
+reserved :: String -> Parser ()
+reserved = lexeme . Token.reserved tokenizer
+
+-- | Consume whitespace from the stream.
+whiteSpace :: Parser ()
+whiteSpace = lexeme $ Token.whiteSpace tokenizer
 
 tokenizer :: Token.TokenParser ()
 tokenizer =
@@ -27,18 +44,8 @@ tokenizer =
     , Token.caseSensitive = True
     }
 
-moduleSegment :: Parser ModuleSegment
-moduleSegment = do
-  str <- identifier
-  when (isLower $ head str) $ 
-       parserFail "Module part must start with capital letter"
-  return $ Text.pack str
-
 lexeme :: Parser a -> Parser a
 lexeme = Token.lexeme tokenizer
-
-reserved :: String -> Parser ()
-reserved = lexeme . Token.reserved tokenizer
 
 identifier :: Parser String
 identifier = lexeme $ Token.identifier tokenizer

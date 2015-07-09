@@ -8,14 +8,16 @@ import GhostLang.Types ( GhostModule (..)
                        , ModuleDecl (..)
                        , ImportDecl (..)
                        )
-import GhostLang.Parser.Tokenizer (moduleSegment, reserved)
+import GhostLang.Parser.Tokenizer (moduleSegment, reserved, whiteSpace)
 import Text.Parsec
 import Text.Parsec.String (Parser)
 
 -- | Parse a ghost module definition. I.e. the main structure for a
 -- ghost-lang module.
 ghostModuleDef :: Parser GhostModule
-ghostModuleDef = GhostModule <$> moduleDecl <*> many importDecl
+ghostModuleDef = do
+  whiteSpace
+  GhostModule <$> moduleDecl <*> many importDecl
 
 -- | Parse a module declaration. I.e. the keyword "module" followed by a
 -- module path.
