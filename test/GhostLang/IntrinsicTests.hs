@@ -27,7 +27,7 @@ delayCommand = do
 
   -- Let the range be generous due to the conditions for testing.
   let minDur = realToFrac (0.5 :: Double)
-      maxDur = realToFrac (1.0 :: Double)
+      maxDur = realToFrac (0.9 :: Double)
   dur `assertGTE` minDur
   dur `assertLTE` maxDur
 

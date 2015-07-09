@@ -20,6 +20,7 @@ test-suite ghost-lang-test
   other-modules:       GhostLang.InterpreterGenerators
                        GhostLang.InterpreterTests
                        GhostLang.InterpreterProps
+                       GhostLang.IntrinsicTests
                        GhostLang.ParserGenerators
                        GhostLang.SerializationTests
   build-depends:       base
