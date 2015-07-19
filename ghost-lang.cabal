@@ -17,7 +17,8 @@ test-suite ghost-lang-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  other-modules:       GhostLang.InterpreterGenerators
+  other-modules:       GhostLang.CommonGenerators
+                       GhostLang.InterpreterGenerators
                        GhostLang.InterpreterTests
                        GhostLang.InterpreterProps
                        GhostLang.IntrinsicTests

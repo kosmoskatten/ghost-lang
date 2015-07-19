@@ -5,11 +5,14 @@ module GhostLang.ParserGenerators where
 
 import Control.Monad (forM_)
 import Control.Monad.Writer (execWriter, tell)
+import GhostLang.CommonGenerators ()
 import GhostLang.Intrinsic (IntrinsicSet)
-import GhostLang.Types ( ModuleSegment
+import GhostLang.Types ( Label
+                       , ModuleSegment
                        , GhostModule (..)
                        , ModuleDecl (..)
                        , ImportDecl (..)
+                       , Value (..)
                        )
 import Test.QuickCheck
 import Text.Printf (printf)
@@ -58,6 +61,10 @@ instance Stringify ImportDecl where
     stringify (ImportDecl segs) = printf "import %s" (str segs)
         where str = T.unpack . T.intercalate "."
 
-
+instance Stringify Value where
+    stringify (Literal v)      = printf "literal(%ld)" v
+    stringify (Stored v)       = printf "%s" (T.unpack v)
+    stringify (Gaussian v1 v2) = printf "gaussian(%ld, %ld)" v1 v2
+    stringify (Uniform v1 v2)  = printf "uniform(%ld, %ld)" v1 v2
 
 

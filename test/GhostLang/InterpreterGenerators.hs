@@ -13,6 +13,7 @@ import Data.Serialize (Serialize (..))
 import Data.Text (pack)
 import GHC.Generics (Generic)
 import GHC.Int (Int64)
+import GhostLang.CommonGenerators ()
 import GhostLang.Interpreter (InstructionSet (..))
 import GhostLang.Types ( Label
                        , Value (..)
@@ -22,17 +23,6 @@ import GhostLang.Types ( Label
                        , Operation (..)
                        )
 import Test.QuickCheck
-
--- | Arbitrary instance for Value.
-instance Arbitrary Value where
-    arbitrary = oneof [ Literal <$> posInt
-                      , Uniform <$> posInt <*> posInt
-                      , Gaussian <$> posInt <*> posInt
-                      , Stored <$> arbitrary
-                      ]
-        where
-          posInt :: Gen Int64
-          posInt = choose (0, maxBound)
 
 -- | Arbitrary instance for Program.
 instance Arbitrary a => Arbitrary (Program a) where
