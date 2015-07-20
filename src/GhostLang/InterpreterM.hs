@@ -3,6 +3,7 @@ module GhostLang.InterpreterM
     ( InterpreterM (..)
     , State
     , runInterpreter
+    , runInterpreterTest
 
       -- API towards ghost-lang interpretation. Counters:
     , incInstrInvoked
@@ -13,6 +14,9 @@ module GhostLang.InterpreterM
 
       -- Value evaluation:
     , evalValue
+
+      -- TimeUnit evaluation:
+    , evalTimeUnit
 
     , ask
     , get
@@ -47,7 +51,7 @@ import GhostLang.Counter ( Counter (..)
                          , incProcCalls'
                          )
 import GhostLang.Scope (Scope, emptyScope, lookup)
-import GhostLang.Types (Value (..))
+import GhostLang.Types (Value (..), TimeUnit (..))
 import Prelude hiding (lookup)
 
 -- | Interpreter monad type for interpretation of instructions
@@ -62,11 +66,16 @@ newtype InterpreterM a =
 type State = [TVar Counter]
 
 -- | Run an InterpreterM action. The action will be supplied the given
--- counters and an empty reader set. Returned from the action are the
--- counters in exactly the same order as when supplied.
+-- counters and an empty reader set.
 runInterpreter :: State -> InterpreterM () -> IO ()
 runInterpreter counters interpreter =
   evalStateT (runReaderT (extractInterpreterM interpreter) emptyScope) counters
+
+-- | Run an interpreterM action for testing purposes. Run with an
+-- empty counter set.
+runInterpreterTest :: InterpreterM a -> IO a
+runInterpreterTest interpreter =
+    evalStateT (runReaderT (extractInterpreterM interpreter) emptyScope) []
 
 -- | Increase the counter for invoked instructions.
 incInstrInvoked :: InterpreterM ()
@@ -98,6 +107,13 @@ evalValue (Stored x) = do
     _       -> error $ "Cannot lookup stored value: " ++ show x
   
 evalValue _ = error "Not yet implemented"
+
+-- | Evaluate a TimeUnit. The result is a value suitable for feeding
+-- threadDelay.
+evalTimeUnit :: TimeUnit -> InterpreterM Int
+evalTimeUnit (USec v) = fromIntegral <$> evalValue v
+evalTimeUnit (MSec v) = (1000 *) . fromIntegral <$> evalValue v
+evalTimeUnit (Sec  v) = (1000000 *) . fromIntegral <$> evalValue v
 
 updateCounter :: (Counter -> Counter) -> InterpreterM ()
 updateCounter g = mapM_ (\tvar -> atomically' $ modifyTVar' tvar g) =<< get

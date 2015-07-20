@@ -80,7 +80,7 @@ instance InstructionSet a => InstructionSet (Operation a) where
       incProcCalls procName
       
       -- Run the procedure inside its new scope.
-      local (\_ -> scope) $ mapM_ exec ops
+      local (const scope) $ mapM_ exec ops
           where
             copyValue :: (Label, Value) -> InterpreterM (Label, Value)
             copyValue (label, Stored label') = do

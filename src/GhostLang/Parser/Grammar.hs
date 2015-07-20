@@ -1,8 +1,10 @@
+{-# LANGUAGE TupleSections #-}
 module GhostLang.Parser.Grammar
     ( ghostModuleDef
     , moduleDecl
     , importDecl
     , valueRef
+    , timeUnitRef
     ) where
 
 import GhostLang.Intrinsic (IntrinsicSet)
@@ -10,6 +12,7 @@ import GhostLang.Types ( GhostModule (..)
                        , ModuleDecl (..)
                        , ImportDecl (..)
                        , Value (..)
+                       , TimeUnit (..)
                        )
 import GhostLang.Parser.Tokenizer ( comma
                                   , identifier
@@ -43,20 +46,23 @@ importDecl = do
   reserved "import"
   ImportDecl <$> moduleSegment `sepBy1` char '.'
 
--- | Parse a value reference. I.e. everywhere a value is used.
+-- | Parse a value reference from the stream.
 valueRef :: Parser Value
 valueRef = literalRef <|> gaussianRef <|> uniformRef <|> storedRef
     where
-      literalRef = Literal <$> (reserved "literal" *> withinParens nonNegative)
-      gaussianRef = do
-        (v1, v2) <- reserved "gaussian" *> withinParens valuePair
-        return $ Gaussian v1 v2
-      uniformRef = do
-        (v1, v2) <- reserved "uniform" *> withinParens valuePair
-        return $ Uniform v1 v2
-      storedRef  = Stored . T.pack <$> identifier
-      valuePair = do
-        v1 <- nonNegative
-        comma
-        v2 <- nonNegative
-        return (v1, v2)
+      literalRef  = Literal <$> (reserved "literal" *> withinParens nonNegative)
+      gaussianRef = uncurry Gaussian <$> 
+                        (reserved "gaussian" *> withinParens valuePair)
+      uniformRef  = uncurry Uniform <$> 
+                        (reserved "uniform" *> withinParens valuePair)
+      storedRef   = Stored . T.pack <$> identifier
+      valuePair   = (,) <$> nonNegative <*> (comma *> nonNegative)
+
+-- | Parse a time reference from the stream
+timeUnitRef :: Parser TimeUnit
+timeUnitRef = do
+  value <- valueRef
+  unit  <- reserved "usec" *> pure USec
+       <|> reserved "msec" *> pure MSec
+       <|> reserved "sec"  *> pure Sec
+  return $ unit value

@@ -13,6 +13,7 @@ module GhostLang.Counter
     , getTotalPatternRuns
     ) where
 
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import GHC.Int (Int64)
 import qualified Data.Map.Strict as Map
@@ -68,7 +69,7 @@ incProcCalls' p c@Counter {..} =
 
 -- | Get the value for the procedure call counter for procedure 'p'.
 getProcCalls :: Text -> Counter -> Int64
-getProcCalls p Counter {..} = maybe 0 id (Map.lookup p procCalls)
+getProcCalls p Counter {..} = fromMaybe 0 (Map.lookup p procCalls)
 
 -- | Get the total number of procedure calls.
 getTotalProcCalls :: Counter -> Int64
@@ -82,7 +83,7 @@ incPatternRuns' p c@Counter {..} =
 
 -- | Get the value for the pattern run counter for pattern 'p'.
 getPatternRuns :: Text -> Counter -> Int64
-getPatternRuns p Counter {..} = maybe 0 id (Map.lookup p patternRuns)
+getPatternRuns p Counter {..} = fromMaybe 0 (Map.lookup p patternRuns)
 
 -- | Get the total number of pattern runs.
 getTotalPatternRuns :: Counter -> Int64

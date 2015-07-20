@@ -3,6 +3,7 @@ module GhostLang.ParserProps
     , moduleDeclaration
     , importDeclaration
     , valueReference
+    , timeUnitReference
     ) where
 
 import GhostLang.Intrinsic (IntrinsicSet)
@@ -10,12 +11,15 @@ import GhostLang.Types ( GhostModule (..)
                        , ModuleDecl (..)
                        , ImportDecl (..)
                        , Value (..)
+                       , TimeUnit (..)
                        )
 import GhostLang.Parser.Grammar ( ghostModuleDef
                                 , moduleDecl
                                 , importDecl
                                 , valueRef
+                                , timeUnitRef
                                 )
+import GhostLang.CommonGenerators
 import GhostLang.ParserGenerators
 import Text.Parsec (parse)
 
@@ -40,9 +44,16 @@ importDeclaration i =
       Right i' -> i == i'
       _        -> False
 
--- | Property to test the valuRef parser.
+-- | Property to test the valueRef parser.
 valueReference :: Value -> Bool
 valueReference v =
     case parse valueRef "" (stringify v) of
       Right v' -> v == v'
+      _        -> False
+
+-- | Property to test the timeUnitRef parser.
+timeUnitReference :: TimeUnit -> Bool
+timeUnitReference t =
+    case parse timeUnitRef "" (stringify t) of
+      Right t' -> t == t'
       _        -> False

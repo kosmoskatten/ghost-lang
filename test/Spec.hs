@@ -7,6 +7,7 @@ import GhostLang.InterpreterProps ( simpleSequencePattern
                                   , nonNestedLoopPattern
                                   , nonNestedConcPattern
                                   )
+import GhostLang.InterpreterMProps (evalValueP, evalTimeUnitP)
 import GhostLang.InterpreterTests ( oneLevelCallNoParamsPattern
                                   , oneLevelCallOneParamPattern
                                   , localScopeOneParamPattern
@@ -18,6 +19,7 @@ import GhostLang.ParserProps ( ghostModuleDefinition
                              , moduleDeclaration
                              , importDeclaration
                              , valueReference
+                             , timeUnitReference
                              )
 import GhostLang.SerializationTests ( encodeDecodeIsEqual
                                     , writeReadFile
@@ -37,6 +39,10 @@ testSuite =
       , testProperty "NonNestedLoopPattern" nonNestedLoopPattern
       , testProperty "NonNestedConcPattern" nonNestedConcPattern
       ]
+    , testGroup "GhostLang.InterpreterMTests"
+      [ testProperty "EvalValue" evalValueP
+      , testProperty "EvalTimeUnit" evalTimeUnitP
+      ]
     , testGroup "GhostLang.InterpreterTests"
       [ testCase "OneLevelCallNoParamsPattern" oneLevelCallNoParamsPattern
       , testCase "OneLevelCallOneParamPattern" oneLevelCallOneParamPattern
@@ -52,6 +58,7 @@ testSuite =
       , testProperty "ModuleDeclaration" moduleDeclaration
       , testProperty "ImportDeclaration" importDeclaration
       , testProperty "ValueReference" valueReference
+      , testProperty "TimeUnitReference" timeUnitReference
       ]
     , testGroup "GhostLang.SerializationTests"
       [ testProperty "EncodeDecodeIsEqual" encodeDecodeIsEqual

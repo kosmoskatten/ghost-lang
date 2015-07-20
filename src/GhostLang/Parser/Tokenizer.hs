@@ -71,6 +71,7 @@ tokenizer =
         [ "module"
         , "import"
         , "literal"
+        , "usec", "msec", "sec"
         ]
     , Token.caseSensitive = True
     }

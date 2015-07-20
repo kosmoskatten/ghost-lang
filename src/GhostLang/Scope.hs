@@ -15,7 +15,7 @@ newtype Scope = Scope (Map.Map Text Value)
 
 -- | Make an empty scope.
 emptyScope :: Scope
-emptyScope = Scope $ Map.empty
+emptyScope = Scope Map.empty
 
 -- | Make a scope from the provided list.
 fromList :: [(Text, Value)] -> Scope

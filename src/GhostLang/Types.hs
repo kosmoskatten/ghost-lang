@@ -8,6 +8,7 @@ module GhostLang.Types
     , GhostModule (..)
     , ModuleDecl (..)
     , ImportDecl (..)
+    , TimeUnit (..)
     , Value (..)
     , Program (..)
     , Pattern (..)
@@ -42,6 +43,10 @@ newtype ModuleDecl = ModuleDecl [ModuleSegment]
 -- | An import declaration, specifying the full path name of the
 -- imported module.
 newtype ImportDecl = ImportDecl [ModuleSegment]
+    deriving (Eq, Generic, Show)
+
+-- | A unit for describing size of time.
+data TimeUnit = USec Value | MSec Value | Sec Value
     deriving (Eq, Generic, Show)
 
 -- | Representation of numeric values in ghost-lang.

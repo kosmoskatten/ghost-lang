@@ -12,6 +12,7 @@ import GhostLang.Types ( Label
                        , GhostModule (..)
                        , ModuleDecl (..)
                        , ImportDecl (..)
+                       , TimeUnit (..)
                        , Value (..)
                        )
 import Test.QuickCheck
@@ -67,4 +68,8 @@ instance Stringify Value where
     stringify (Gaussian v1 v2) = printf "gaussian(%ld, %ld)" v1 v2
     stringify (Uniform v1 v2)  = printf "uniform(%ld, %ld)" v1 v2
 
+instance Stringify TimeUnit where
+    stringify (USec v) = printf "%s usec" (stringify v)
+    stringify (MSec v) = printf "%s msec" (stringify v)
+    stringify (Sec v)  = printf "%s sec"  (stringify v)
 

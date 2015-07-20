@@ -21,6 +21,7 @@ test-suite ghost-lang-test
                        GhostLang.InterpreterGenerators
                        GhostLang.InterpreterTests
                        GhostLang.InterpreterProps
+                       GhostLang.InterpreterMProps
                        GhostLang.IntrinsicTests
                        GhostLang.ParserGenerators
                        GhostLang.SerializationTests
