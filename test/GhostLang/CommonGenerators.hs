@@ -2,8 +2,13 @@
 module GhostLang.CommonGenerators where
 
 import GhostLang.Types (Label, TimeUnit (..), Value (..))
+import GhostLang.Intrinsic (IntrinsicSet (..))
 import Test.QuickCheck
 import qualified Data.Text as T
+
+-- | Arbitrary instance for IntrinsicSet.
+instance Arbitrary IntrinsicSet where
+    arbitrary = Delay <$> arbitrary
 
 -- | Arbitrary instance for TimeUnit.
 instance Arbitrary TimeUnit where

@@ -4,6 +4,7 @@ module GhostLang.ParserProps
     , importDeclaration
     , valueReference
     , timeUnitReference
+    , intrinsicSetCommand
     ) where
 
 import GhostLang.Intrinsic (IntrinsicSet)
@@ -18,6 +19,7 @@ import GhostLang.Parser.Grammar ( ghostModuleDef
                                 , importDecl
                                 , valueRef
                                 , timeUnitRef
+                                , intrinsicSetCmd
                                 )
 import GhostLang.CommonGenerators
 import GhostLang.ParserGenerators
@@ -56,4 +58,11 @@ timeUnitReference :: TimeUnit -> Bool
 timeUnitReference t =
     case parse timeUnitRef "" (stringify t) of
       Right t' -> t == t'
+      _        -> False
+
+-- | Property to test the instrinsicSetCmd parser.
+intrinsicSetCommand :: IntrinsicSet -> Bool
+intrinsicSetCommand i =
+    case parse intrinsicSetCmd "" (stringify i) of
+      Right i' -> i == i'
       _        -> False

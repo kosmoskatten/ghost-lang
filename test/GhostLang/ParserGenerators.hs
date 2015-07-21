@@ -6,7 +6,7 @@ module GhostLang.ParserGenerators where
 import Control.Monad (forM_)
 import Control.Monad.Writer (execWriter, tell)
 import GhostLang.CommonGenerators ()
-import GhostLang.Intrinsic (IntrinsicSet)
+import GhostLang.Intrinsic (IntrinsicSet (..))
 import GhostLang.Types ( Label
                        , ModuleSegment
                        , GhostModule (..)
@@ -73,3 +73,5 @@ instance Stringify TimeUnit where
     stringify (MSec v) = printf "%s msec" (stringify v)
     stringify (Sec v)  = printf "%s sec"  (stringify v)
 
+instance Stringify IntrinsicSet where
+    stringify (Delay t) = printf "Delay %s" (stringify t)

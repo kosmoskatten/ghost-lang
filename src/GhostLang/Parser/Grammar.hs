@@ -5,9 +5,10 @@ module GhostLang.Parser.Grammar
     , importDecl
     , valueRef
     , timeUnitRef
+    , intrinsicSetCmd
     ) where
 
-import GhostLang.Intrinsic (IntrinsicSet)
+import GhostLang.Intrinsic (IntrinsicSet (..))
 import GhostLang.Types ( GhostModule (..)
                        , ModuleDecl (..)
                        , ImportDecl (..)
@@ -66,3 +67,7 @@ timeUnitRef = do
        <|> reserved "msec" *> pure MSec
        <|> reserved "sec"  *> pure Sec
   return $ unit value
+
+-- | Parse an intrinsic set command from the stream.
+intrinsicSetCmd :: Parser IntrinsicSet
+intrinsicSetCmd = Delay <$> (reserved "Delay" *> timeUnitRef)

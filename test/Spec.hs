@@ -20,6 +20,7 @@ import GhostLang.ParserProps ( ghostModuleDefinition
                              , importDeclaration
                              , valueReference
                              , timeUnitReference
+                             , intrinsicSetCommand
                              )
 import GhostLang.SerializationTests ( encodeDecodeIsEqual
                                     , writeReadFile
@@ -59,6 +60,7 @@ testSuite =
       , testProperty "ImportDeclaration" importDeclaration
       , testProperty "ValueReference" valueReference
       , testProperty "TimeUnitReference" timeUnitReference
+      , testProperty "IntrinsicSetCommand" intrinsicSetCommand
       ]
     , testGroup "GhostLang.SerializationTests"
       [ testProperty "EncodeDecodeIsEqual" encodeDecodeIsEqual

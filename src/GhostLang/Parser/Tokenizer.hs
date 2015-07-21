@@ -72,6 +72,7 @@ tokenizer =
         , "import"
         , "literal"
         , "usec", "msec", "sec"
+        , "Delay"
         ]
     , Token.caseSensitive = True
     }
