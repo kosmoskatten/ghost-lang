@@ -9,6 +9,7 @@ import GhostLang.Intrinsic (IntrinsicSet (..))
 import GhostLang.Interpreter (execPattern)
 import GhostLang.InterpreterM (runInterpreter)
 import GhostLang.Types ( Value (..)
+                       , TimeUnit (..)
                        , Pattern (..)
                        , Operation (..)
                        )
@@ -20,7 +21,7 @@ import Text.Printf (printf)
 delayCommand :: Assertion
 delayCommand = do
   let p = Pattern "pa1" 1
-          [ Invoke $ Delay (Literal 500)
+          [ Invoke $ Delay $ MSec (Literal 500)
           ]
   -- Time the duration for the pattern execution.
   dur <- timedAction $ runInterpreter [] $ execPattern p

@@ -7,19 +7,19 @@ module GhostLang.Intrinsic
 import Control.Concurrent (threadDelay)
 import GHC.Generics (Generic)
 import GhostLang.Interpreter (InstructionSet (..))
-import GhostLang.InterpreterM (evalValue, liftIO)
-import GhostLang.Types (Value)
+import GhostLang.InterpreterM (evalTimeUnit, liftIO)
+import GhostLang.Types (TimeUnit)
 
 -- | The data type of the intrinsic operations of ghost-lang.
 data IntrinsicSet where
-    Delay :: Value -> IntrinsicSet
+    Delay :: TimeUnit -> IntrinsicSet
     -- ^ Delay the executing thread for value milliseconds.
     deriving (Eq, Generic, Show)
 
 -- | Implementation of the InstructionSet type class.
 instance InstructionSet IntrinsicSet where
-    exec (Delay dur) = do
-      dur' <- fromIntegral <$> evalValue dur
-      liftIO $ threadDelay (dur' * 1000)
+    exec (Delay duration) = do
+      duration' <- evalTimeUnit duration
+      liftIO $ threadDelay duration'
       
 
