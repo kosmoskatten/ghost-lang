@@ -1,7 +1,11 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module GhostLang.CommonGenerators where
 
-import GhostLang.Types (Label, TimeUnit (..), Value (..))
+import GhostLang.Types ( Label
+                       , TimeUnit (..)
+                       , Value (..)
+                       , Operation (..)
+                       )
 import GhostLang.Intrinsic (IntrinsicSet (..))
 import Test.QuickCheck
 import qualified Data.Text as T
@@ -26,6 +30,15 @@ instance Arbitrary Value where
           gaussianValue = Gaussian <$> nonNegative <*> nonNegative
           uniformValue  = Uniform  <$> nonNegative <*> nonNegative
           nonNegative   = choose (0, maxBound)
+
+-- | Arbitrary instance for Operation.
+instance Arbitrary a => Arbitrary (Operation a) where
+    arbitrary = oneof [ invokeOp, loopOp, concurrentOp, unresolvedOp ]
+        where
+          invokeOp     = Invoke <$> arbitrary
+          loopOp       = Loop <$> arbitrary <*> listOf invokeOp
+          concurrentOp = Concurrently <$> listOf invokeOp
+          unresolvedOp = Unresolved <$> validId <*> listOf arbitrary
 
 validId :: Gen Label
 validId = T.pack <$> validId'

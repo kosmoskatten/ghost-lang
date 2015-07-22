@@ -15,12 +15,12 @@ import GhostLang.InterpreterTests ( oneLevelCallNoParamsPattern
                                   , longChainTwoParamsPattern
                                   )
 import GhostLang.IntrinsicTests (delayCommand)
-import GhostLang.ParserProps ( ghostModuleDefinition
-                             , moduleDeclaration
-                             , importDeclaration
-                             , valueReference
-                             , timeUnitReference
-                             , intrinsicSetCommand
+import GhostLang.ParserProps ( ghostModuleDefP
+                             , moduleDeclP
+                             , importDeclP
+                             , valueRefP
+                             , timeUnitRefP
+                             , intrinsicCommandP
                              )
 import GhostLang.SerializationTests ( encodeDecodeIsEqual
                                     , writeReadFile
@@ -55,12 +55,12 @@ testSuite =
       [ testCase "DelayCommand" delayCommand
       ]
     , testGroup "GhostLang.ParserProps"
-      [ testProperty "GhostModuleDefinition" ghostModuleDefinition
-      , testProperty "ModuleDeclaration" moduleDeclaration
-      , testProperty "ImportDeclaration" importDeclaration
-      , testProperty "ValueReference" valueReference
-      , testProperty "TimeUnitReference" timeUnitReference
-      , testProperty "IntrinsicSetCommand" intrinsicSetCommand
+      [ testProperty "GhostModuleDefinition" ghostModuleDefP
+      , testProperty "ModuleDeclaration" moduleDeclP
+      , testProperty "ImportDeclaration" importDeclP
+      , testProperty "ValueReference" valueRefP
+      , testProperty "TimeUnitReference" timeUnitRefP
+      , testProperty "IntrinsicSetCommand" intrinsicCommandP
       ]
     , testGroup "GhostLang.SerializationTests"
       [ testProperty "EncodeDecodeIsEqual" encodeDecodeIsEqual

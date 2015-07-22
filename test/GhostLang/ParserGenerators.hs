@@ -7,13 +7,13 @@ import Control.Monad (forM_)
 import Control.Monad.Writer (execWriter, tell)
 import GhostLang.CommonGenerators ()
 import GhostLang.Intrinsic (IntrinsicSet (..))
-import GhostLang.Types ( Label
-                       , ModuleSegment
+import GhostLang.Types ( ModuleSegment
                        , GhostModule (..)
                        , ModuleDecl (..)
                        , ImportDecl (..)
                        , TimeUnit (..)
                        , Value (..)
+                       , Operation (..)
                        )
 import Test.QuickCheck
 import Text.Printf (printf)
@@ -75,3 +75,24 @@ instance Stringify TimeUnit where
 
 instance Stringify IntrinsicSet where
     stringify (Delay t) = printf "Delay %s" (stringify t)
+
+instance Stringify a => Stringify (Operation a) where
+    stringify (Invoke i)  = stringify i
+    stringify (Loop c is) = printf "loop %s { %s }" (stringify c) (stringify is)
+    stringify (Concurrently is) = printf "concurrently { %s }" (stringify is)
+    stringify (Unresolved n vs) = printf "%s (%s)" (T.unpack n) (toCommaStr vs)
+    stringify (Call _ _)        = error "Not used"
+
+instance Stringify a => Stringify [a] where
+    stringify [] = ""
+    stringify xs =
+        let y:ys = map stringify xs
+            ys'  = map (',':) ys
+        in unlines (y:ys')
+
+toCommaStr :: Stringify a => [a] -> String
+toCommaStr [] = ""
+toCommaStr xs =
+    let y:ys = map stringify xs
+        ys'  = concatMap (',':) ys
+    in y ++ ys'

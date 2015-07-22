@@ -12,7 +12,6 @@ module GhostLang.InterpreterGenerators
 import Data.Serialize (Serialize (..))
 import Data.Text (pack)
 import GHC.Generics (Generic)
-import GHC.Int (Int64)
 import GhostLang.CommonGenerators ()
 import GhostLang.Interpreter (InstructionSet (..))
 import GhostLang.Types ( Label
@@ -44,15 +43,6 @@ instance Arbitrary a => Arbitrary (Procedure a) where
                              , Concurrently <$> (listOf (Invoke <$> arbitrary))
                              , Unresolved <$> arbitrary <*> (listOf arbitrary)
                              ]
-
--- | Arbitrary instance for Operation.
-instance Arbitrary a => Arbitrary (Operation a) where
-    arbitrary = oneof [ Invoke <$> arbitrary
-                      , Loop <$> arbitrary <*> (listOf (Invoke <$> arbitrary))
-                      , Concurrently <$> (listOf (Invoke <$> arbitrary))
-                      , Call <$> arbitrary <*> (listOf arbitrary)
-                      , Unresolved <$> arbitrary <*> (listOf arbitrary)
-                      ]
 
 -- | Generate a label with at least length 1.
 instance Arbitrary Label where

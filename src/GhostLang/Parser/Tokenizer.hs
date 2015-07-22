@@ -5,6 +5,7 @@ module GhostLang.Parser.Tokenizer
     , moduleSegment
     , reserved
     , whiteSpace
+    , withinBraces
     , withinParens
     ) where
 
@@ -52,6 +53,10 @@ reserved = lexeme . Token.reserved tokenizer
 whiteSpace :: Parser ()
 whiteSpace = lexeme $ Token.whiteSpace tokenizer
 
+-- | Parse from within a pair of braces.
+withinBraces :: Parser a -> Parser a
+withinBraces = lexeme . Token.braces tokenizer
+
 -- | Parse from within a pair of parens.
 withinParens :: Parser a -> Parser a
 withinParens = lexeme . Token.parens tokenizer
@@ -70,7 +75,8 @@ tokenizer =
     , Token.reservedNames =
         [ "module"
         , "import"
-        , "literal"
+        , "loop", "concurrently"
+        , "literal", "gaussian", "uniform"
         , "usec", "msec", "sec"
         , "Delay"
         ]
