@@ -5,6 +5,8 @@ module GhostLang.ParserProps
     , valueRefP
     , timeUnitRefP
     , intrinsicCommandP
+    , patternP
+    , procedureP
     , operationP
     ) where
 
@@ -14,6 +16,8 @@ import GhostLang.Types ( GhostModule
                        , ImportDecl
                        , Value
                        , TimeUnit
+                       , Pattern
+                       , Procedure
                        , Operation
                        )
 import GhostLang.Parser.Grammar ( ghostModuleDef
@@ -22,57 +26,53 @@ import GhostLang.Parser.Grammar ( ghostModuleDef
                                 , valueRef
                                 , timeUnitRef
                                 , intrinsicCommand
+                                , pattern
+                                , procedure
                                 , operation
                                 )
 import GhostLang.CommonGenerators
 import GhostLang.ParserGenerators
 import Text.Parsec (parse)
+import Text.Parsec.String (Parser)
 
 -- | Property to test the top level ghostModuleDef parser,
 ghostModuleDefP :: GhostModule IntrinsicSet -> Bool
-ghostModuleDefP g =
-    case parse ghostModuleDef "" (stringify g) of
-      Right g' -> g == g'
-      _        -> False
+ghostModuleDefP = prop ghostModuleDef
 
 -- | Property to test the moduleDecl parser.
 moduleDeclP :: ModuleDecl -> Bool
-moduleDeclP m =
-    case parse moduleDecl "" (stringify m) of
-      Right m' -> m == m'
-      _        -> False
+moduleDeclP = prop moduleDecl
 
 -- | Property to test the importDecl parser.
 importDeclP :: ImportDecl -> Bool
-importDeclP i =
-    case parse importDecl "" (stringify i) of
-      Right i' -> i == i'
-      _        -> False
+importDeclP = prop importDecl
 
 -- | Property to test the valueRef parser.
 valueRefP :: Value -> Bool
-valueRefP v =
-    case parse valueRef "" (stringify v) of
-      Right v' -> v == v'
-      _        -> False
+valueRefP = prop valueRef
 
 -- | Property to test the timeUnitRef parser.
 timeUnitRefP :: TimeUnit -> Bool
-timeUnitRefP t =
-    case parse timeUnitRef "" (stringify t) of
-      Right t' -> t == t'
-      _        -> False
+timeUnitRefP = prop timeUnitRef
 
 -- | Property to test the instrinsicCommand parser.
 intrinsicCommandP :: IntrinsicSet -> Bool
-intrinsicCommandP i =
-    case parse intrinsicCommand "" (stringify i) of
-      Right i' -> i == i'
-      _        -> False
+intrinsicCommandP = prop intrinsicCommand
+
+-- | Property to test the pattern parser.
+patternP :: Pattern IntrinsicSet -> Bool
+patternP = prop pattern
+
+-- | Property to test the procedure parser.
+procedureP :: Procedure IntrinsicSet -> Bool
+procedureP = prop procedure
 
 -- | Property to test the operation parser.
 operationP :: Operation IntrinsicSet -> Bool
-operationP o =
-    case parse operation "" (stringify o) of
-      Right o' -> o == o'
+operationP = prop operation
+
+prop :: (Eq a, Stringify a) => Parser a -> a -> Bool
+prop p x =
+    case parse p "" (stringify x) of
+      Right x' -> x == x'
       _        -> False

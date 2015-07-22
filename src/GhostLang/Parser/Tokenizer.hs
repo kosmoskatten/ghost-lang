@@ -75,6 +75,8 @@ tokenizer =
     , Token.reservedNames =
         [ "module"
         , "import"
+        , "pattern", "procedure"
+        , "with", "weight"
         , "loop", "concurrently"
         , "literal", "gaussian", "uniform"
         , "usec", "msec", "sec"

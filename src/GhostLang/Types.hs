@@ -21,15 +21,22 @@ import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import GHC.Generics (Generic)
 import GHC.Int (Int64)
+import Text.Parsec.Pos ( SourcePos
+                       , sourceName
+                       , sourceLine
+                       , sourceColumn
+                       , newPos
+                       )
 
 import qualified Data.Text as T
 
 type Label         = Text
 type ModuleSegment = Text
-type Weight        = Int
+type Weight        = Int64
 
 -- | Description of a ghost-lang module. This is the representation
--- produced of the parser when reading a gl-file.
+-- produced of the parser when reading a gl-file. One or several ghost
+-- modules are linked to a program.
 data GhostModule a where
     GhostModule :: ModuleDecl -> [ImportDecl] 
                 -> [Pattern a] -> [Procedure a] -> GhostModule a
@@ -100,15 +107,25 @@ data Operation a where
     -- is given its arguments in a local context of the Interpreter
     -- monad.
 
-    Unresolved :: !Label -> ![Value] -> Operation a
+    Unresolved :: !SourcePos -> !Label -> ![Value] -> Operation a
     -- ^ Unresolved procedure.
-    deriving (Eq, Generic, Show)
+    deriving (Generic, Show)
 
 instance Serialize Value
 instance Serialize a => Serialize (Program a)
 instance Serialize a => Serialize (Pattern a)
 instance Serialize a => Serialize (Procedure a)
 instance Serialize a => Serialize (Operation a)
+
+-- | Tailor made an Eq instance for Operation which not include
+-- SourcePos. Needed for testing purposes.
+instance Eq a => Eq (Operation a) where
+    (Invoke x)         == (Invoke x')          = x == x'
+    (Loop x y)         == (Loop x' y')         = x == x' && y == y'
+    (Concurrently x)   == (Concurrently x')    = x == x'
+    (Call x y)         == (Call x' y')         = x == x' && y == y'
+    (Unresolved _ x y) == (Unresolved _ x' y') = x == x' && y == y'
+    _                  == _                    = False
 
 -- | Serialize instance for Text as it's not included in the Cereal
 -- library.
@@ -120,3 +137,12 @@ instance Serialize Text where
     get = do
       len <- get
       decodeUtf8 <$> getByteString len
+
+-- | Ditto SourcePos.
+instance Serialize SourcePos where
+    put s = do
+      put $ sourceName s
+      put $ sourceLine s
+      put $ sourceColumn s
+
+    get = newPos <$> get <*> get <*> get

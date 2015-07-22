@@ -18,7 +18,6 @@ import GhostLang.Types ( Label
                        , Value (..)
                        , Program (..)
                        , Pattern (..)
-                       , Procedure (..)
                        , Operation (..)
                        )
 import Test.QuickCheck
@@ -26,23 +25,6 @@ import Test.QuickCheck
 -- | Arbitrary instance for Program.
 instance Arbitrary a => Arbitrary (Program a) where
     arbitrary = Program <$> arbitrary <*> (listOf arbitrary)
-
--- | Arbitrary instance for Pattern.
-instance Arbitrary a => Arbitrary (Pattern a) where
-    arbitrary = Pattern <$> arbitrary <*> arbitrary <*> (listOf arbitrary)
-
--- | Arbitrary instance for Procedure. Limited in randomness to avoid
--- infinite recursion.
-instance Arbitrary a => Arbitrary (Procedure a) where
-    arbitrary = Procedure <$> arbitrary 
-                          <*> (listOf arbitrary)
-                          <*> (listOf noCall)
-        where noCall = oneof [ Invoke <$> arbitrary
-                             , Loop <$> arbitrary 
-                                    <*> (listOf (Invoke <$> arbitrary))
-                             , Concurrently <$> (listOf (Invoke <$> arbitrary))
-                             , Unresolved <$> arbitrary <*> (listOf arbitrary)
-                             ]
 
 -- | Generate a label with at least length 1.
 instance Arbitrary Label where

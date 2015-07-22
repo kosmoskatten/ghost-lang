@@ -6,16 +6,20 @@ module GhostLang.Parser.Grammar
     , valueRef
     , timeUnitRef
     , intrinsicCommand
+    , pattern
+    , procedure
     , operation
     ) where
 
-import Data.Text (Text)
 import GhostLang.Intrinsic (IntrinsicSet (..))
-import GhostLang.Types ( GhostModule (..)
+import GhostLang.Types ( Label
+                       , GhostModule (..)
                        , ModuleDecl (..)
                        , ImportDecl (..)
                        , Value (..)
                        , TimeUnit (..)
+                       , Pattern (..)
+                       , Procedure (..)
                        , Operation (..)
                        )
 import GhostLang.Parser.Tokenizer ( comma
@@ -33,9 +37,11 @@ import qualified Data.Text as T
 -- | Parse a ghost module definition. I.e. the main structure for a
 -- ghost-lang module.
 ghostModuleDef :: Parser (GhostModule IntrinsicSet)
-ghostModuleDef = do
-  whiteSpace
-  GhostModule <$> moduleDecl <*> many importDecl <*> pure [] <*> pure []
+ghostModuleDef =
+  GhostModule <$> (whiteSpace *> moduleDecl)
+              <*> many importDecl 
+              <*> many pattern
+              <*> many procedure
 
 -- | Parse a module declaration. I.e. the keyword "module" followed by a
 -- module path.
@@ -76,6 +82,22 @@ timeUnitRef = do
 intrinsicCommand :: Parser IntrinsicSet
 intrinsicCommand = Delay <$> (reserved "Delay" *> timeUnitRef)
 
+-- | Parse a pattern from the stream.
+pattern :: Parser (Pattern IntrinsicSet)
+pattern = do
+  reserved "pattern"
+  Pattern <$> packedIdentifier 
+          <*> (reserved "with" >> reserved "weight" *> nonNegative)
+          <*> withinBraces opsList
+
+-- | Parse a procedure from the stream.
+procedure :: Parser (Procedure IntrinsicSet)
+procedure = do
+  reserved "procedure"
+  Procedure <$> packedIdentifier
+            <*> withinParens idList
+            <*> withinBraces opsList
+
 -- | Parse an operation from the stream.
 operation :: Parser (Operation IntrinsicSet)
 operation = concurrently <|> loop <|> invoke <|> unresolved
@@ -87,12 +109,16 @@ operation = concurrently <|> loop <|> invoke <|> unresolved
         reserved "loop"
         Loop <$> valueRef <*> withinBraces opsList
       invoke       = Invoke <$> intrinsicCommand
-      unresolved   = Unresolved <$> packedIdentifier 
+      unresolved   = Unresolved <$> getPosition
+                                <*> packedIdentifier 
                                 <*> (withinParens $ valueRef `sepBy` comma)
+
+idList :: Parser [Label]
+idList = packedIdentifier `sepBy` comma
 
 opsList :: Parser [Operation IntrinsicSet]
 opsList = operation `sepBy` comma
 
-packedIdentifier :: Parser Text
+packedIdentifier :: Parser Label
 packedIdentifier = T.pack <$> identifier
 

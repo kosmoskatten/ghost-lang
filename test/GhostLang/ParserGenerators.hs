@@ -7,12 +7,14 @@ import Control.Monad (forM_)
 import Control.Monad.Writer (execWriter, tell)
 import GhostLang.CommonGenerators ()
 import GhostLang.Intrinsic (IntrinsicSet (..))
-import GhostLang.Types ( ModuleSegment
+import GhostLang.Types ( Label
                        , GhostModule (..)
                        , ModuleDecl (..)
                        , ImportDecl (..)
                        , TimeUnit (..)
                        , Value (..)
+                       , Pattern (..)
+                       , Procedure (..)
                        , Operation (..)
                        )
 import Test.QuickCheck
@@ -24,35 +26,19 @@ import qualified Data.Text as T
 class Stringify a where
     stringify :: a -> String
 
--- | Arbitrary instance for GhostModule.
-instance Arbitrary (GhostModule a) where
-    arbitrary = GhostModule <$> arbitrary <*> listOf arbitrary
-                            <*> pure []   <*> pure []
+instance Stringify Label where
+    stringify = T.unpack
 
--- | Arbitrary instance for ModuleDecl.
-instance Arbitrary ModuleDecl where
-    arbitrary = ModuleDecl <$> listOf1 arbitrary
-
--- | Arbitrary instance for ImportDecl.
-instance Arbitrary ImportDecl where
-    arbitrary = ImportDecl <$> listOf1 arbitrary
-
--- | Arbitrary instance for ModuleSegment. Only generates valid
--- segments.
-instance Arbitrary ModuleSegment where
-    arbitrary = T.pack <$> moduleSegment
-        where
-          moduleSegment = 
-              (:) <$> elements ['A'..'Z']
-                  <*> listOf (elements $ ['a'..'z'] ++
-                                         ['0'..'9'] ++ "-_")
-
-instance Stringify (GhostModule a) where
-    stringify (GhostModule modDecl impDecls _ _) =
+instance Stringify a => Stringify (GhostModule a) where
+    stringify (GhostModule modDecl impDecls patterns procs) =
         execWriter $ do
           tell $ printf "%s\n\n" (stringify modDecl)
           forM_ impDecls $ \impDecl ->
               tell $ printf "%s\n" (stringify impDecl)
+          forM_ patterns $ \pattern ->
+              tell $ printf "%s\n" (stringify pattern)
+          forM_ procs $ \proc ->
+              tell $ printf "%s\n" (stringify proc)
 
 instance Stringify ModuleDecl where
     stringify (ModuleDecl segs) = printf "module %s" (str segs)
@@ -76,12 +62,25 @@ instance Stringify TimeUnit where
 instance Stringify IntrinsicSet where
     stringify (Delay t) = printf "Delay %s" (stringify t)
 
+instance Stringify a => Stringify (Pattern a) where
+    stringify (Pattern n w ops) =
+        printf "pattern %s with weight %ld { %s }" 
+               (T.unpack n) w (stringify ops)
+
+instance Stringify a => Stringify (Procedure a) where
+    stringify (Procedure n ps ops) = 
+        printf "procedure %s(%s) { %s }" (T.unpack n) 
+                                         (toCommaStr ps) 
+                                         (stringify ops)
+
 instance Stringify a => Stringify (Operation a) where
-    stringify (Invoke i)  = stringify i
-    stringify (Loop c is) = printf "loop %s { %s }" (stringify c) (stringify is)
-    stringify (Concurrently is) = printf "concurrently { %s }" (stringify is)
-    stringify (Unresolved n vs) = printf "%s (%s)" (T.unpack n) (toCommaStr vs)
-    stringify (Call _ _)        = error "Not used"
+    stringify (Invoke i)          = stringify i
+    stringify (Loop c is)         = printf "loop %s { %s }" (stringify c) 
+                                                            (stringify is)
+    stringify (Concurrently is)   = printf "concurrently { %s }" (stringify is)
+    stringify (Unresolved _ n vs) = printf "%s (%s)" (T.unpack n) 
+                                                     (toCommaStr vs)
+    stringify (Call _ _)          = error "Not used"
 
 instance Stringify a => Stringify [a] where
     stringify [] = ""

@@ -21,6 +21,9 @@ import GhostLang.ParserProps ( ghostModuleDefP
                              , valueRefP
                              , timeUnitRefP
                              , intrinsicCommandP
+                             , patternP
+                             , procedureP
+                             , operationP
                              )
 import GhostLang.SerializationTests ( encodeDecodeIsEqual
                                     , writeReadFile
@@ -60,7 +63,10 @@ testSuite =
       , testProperty "ImportDeclaration" importDeclP
       , testProperty "ValueReference" valueRefP
       , testProperty "TimeUnitReference" timeUnitRefP
-      , testProperty "IntrinsicSetCommand" intrinsicCommandP
+      , testProperty "IntrinsicCommand" intrinsicCommandP
+      , testProperty "Pattern" patternP
+      , testProperty "Procedure" procedureP
+      , testProperty "Operation" operationP
       ]
     , testGroup "GhostLang.SerializationTests"
       [ testProperty "EncodeDecodeIsEqual" encodeDecodeIsEqual
