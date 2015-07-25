@@ -27,7 +27,8 @@ instance Arbitrary a => Arbitrary (GhostModule a) where
 
 -- | Arbitrary instance for ModuleDecl.
 instance Arbitrary ModuleDecl where
-    arbitrary = ModuleDecl <$> listOf1 moduleSegment
+    arbitrary = ModuleDecl <$> pure (initialPos "")
+                           <*> listOf1 moduleSegment
 
 -- | Arbitrary instance for ImportDecl.
 instance Arbitrary ImportDecl where
@@ -57,7 +58,8 @@ instance Arbitrary Value where
 
 -- | Arbitrary instance for Pattern.
 instance Arbitrary a => Arbitrary (Pattern a) where
-    arbitrary = Pattern <$> validId 
+    arbitrary = Pattern <$> pure (initialPos "")
+                        <*> validId 
                         <*> choose (0, maxBound) 
                         <*> listOf arbitrary
 

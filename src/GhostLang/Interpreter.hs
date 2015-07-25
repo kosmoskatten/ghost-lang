@@ -36,7 +36,7 @@ class InstructionSet a where
 
 -- | Execute a pattern within InterpreterM.
 execPattern :: InstructionSet a => Pattern a -> InterpreterM ()
-execPattern (Pattern name _ ops) = do
+execPattern (Pattern _ name _ ops) = do
   incPatternRuns name
   mapM_ exec ops
 

@@ -21,6 +21,7 @@ import GhostLang.Types ( Label
                        , Operation (..)
                        )
 import Test.QuickCheck
+import Text.Parsec.Pos (initialPos)
 
 -- | Arbitrary instance for Program.
 instance Arbitrary a => Arbitrary (Program a) where
@@ -63,7 +64,8 @@ instance Arbitrary ManySimpleSequencePatterns where
     arbitrary = ManySimpleSequencePatterns <$> (listOf simpleSequencePattern)
 
 simpleSequencePattern :: Gen (Pattern TestInstrSet)
-simpleSequencePattern = Pattern <$> arbitrary
+simpleSequencePattern = Pattern <$> pure (initialPos "")
+                                <*> arbitrary
                                 <*> arbitrary
                                 <*> (listOf invokeOperation)
 
@@ -76,7 +78,8 @@ data NonNestedLoopPattern =
 instance Arbitrary NonNestedLoopPattern where
     arbitrary = NonNestedLoopPattern <$> pattern'
         where
-          pattern' = Pattern <$> arbitrary
+          pattern' = Pattern <$> pure (initialPos "")
+                             <*> arbitrary
                              <*> arbitrary
                              <*> (listOf $ oneof [ invokeOperation
                                                  , nonNestedLoop
@@ -91,7 +94,8 @@ data NonNestedConcPattern =
 instance Arbitrary NonNestedConcPattern where
     arbitrary = NonNestedConcPattern <$> pattern
         where
-          pattern = Pattern <$> arbitrary
+          pattern = Pattern <$> pure (initialPos "")
+                            <*> arbitrary
                             <*> arbitrary
                             <*> (listOf $ oneof [ invokeOperation
                                                 , nonNestedConc

@@ -22,11 +22,12 @@ import GhostLang.Types ( Value (..)
                        , Operation (..)
                        )
 import Test.HUnit
+import Text.Parsec.Pos (initialPos)
 
 -- | Specific test case with a procedure call with no parameters.
 oneLevelCallNoParamsPattern :: Assertion
 oneLevelCallNoParamsPattern = do
-  let p = Pattern "pa1" 1
+  let p = Pattern (initialPos "") "pa1" 1
           [ Call (Procedure "pr1" []
                   [ Loop (Literal 5)
                       [ Invoke Instr1 ]
@@ -44,7 +45,7 @@ oneLevelCallNoParamsPattern = do
 -- | Specific test case with a procedure call with one parameter.
 oneLevelCallOneParamPattern :: Assertion
 oneLevelCallOneParamPattern = do
-  let p = Pattern "pa1" 1
+  let p = Pattern (initialPos "") "pa1" 1
           [ Call (Procedure "pr1" ["iterations"]
                   [ Loop (Stored "iterations")
                              [ Invoke Instr1 ]
@@ -71,7 +72,7 @@ localScopeOneParamPattern = do
               [ Call proc2 [ Literal 10 ]
               , Loop (Stored "iterations") [ Invoke Instr2 ]
               ]
-      p     = Pattern "pa1" 1
+      p     = Pattern (initialPos "") "pa1" 1
               [ Call proc1 [ Literal 5 ]
               ]
   inpC    <- newTVarIO emptyCounter
@@ -96,7 +97,7 @@ twoLevelTwoParamsPattern = do
               [ Loop (Stored "iterationsX") [ Call proc2 [] ]
               , Loop (Stored "iterationsY") [ Call proc3 [] ]
               ]
-      p     = Pattern "pa1" 1
+      p     = Pattern (initialPos "") "pa1" 1
               [ Call proc1 [ Literal 5, Literal 10 ]
               ]
   inpC    <- newTVarIO emptyCounter
@@ -127,7 +128,7 @@ longChainTwoParamsPattern = do
       proc1 = Procedure "pr1" ["iterationsX", "iterationsA"]
               [ Call proc2 [ Stored "iterationsX", Stored "iterationsA"]
               ]
-      p     = Pattern "pa1" 1
+      p     = Pattern (initialPos "") "pa1" 1
               [ Call proc1 [ Literal 5, Literal 10 ]
               ]
   inpC    <- newTVarIO emptyCounter

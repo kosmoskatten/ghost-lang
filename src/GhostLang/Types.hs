@@ -1,8 +1,10 @@
 {-# LANGUAGE DeriveGeneric        #-}
 {-# LANGUAGE GADTs                #-}
+{-# LANGUAGE OverloadedStrings    #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module GhostLang.Types
-    ( Label
+    ( Declaration (..)
+    , Label
     , ModuleSegment
     , Weight
     , GhostModule (..)
@@ -34,6 +36,12 @@ type Label         = Text
 type ModuleSegment = Text
 type Weight        = Int64
 
+-- | Type class to help work with declarations.
+class Declaration a where
+    expName :: a -> Text
+    srcPos :: a -> SourcePos
+    srcPos = error "Not implemented"
+
 -- | Description of a ghost-lang module. This is the representation
 -- produced of the parser when reading a gl-file. One or several ghost
 -- modules are linked to a program.
@@ -44,8 +52,8 @@ data GhostModule a where
 
 -- | A module declaration, specifying the full path name of the
 -- module.
-newtype ModuleDecl = ModuleDecl [ModuleSegment]
-    deriving (Eq, Generic, Show)
+data ModuleDecl = ModuleDecl !SourcePos ![ModuleSegment]
+    deriving (Generic, Show)
 
 -- | An import declaration, specifying the full path name of the
 -- imported module.
@@ -77,8 +85,8 @@ data Program a where
 -- | Pattern is a top level procedure carrying a statistical weight
 -- and a set of operations.
 data Pattern a where
-    Pattern :: !Label -> !Weight -> ![Operation a] -> Pattern a
-    deriving (Eq, Generic, Show)
+    Pattern :: !SourcePos -> !Label -> !Weight -> ![Operation a] -> Pattern a
+    deriving (Generic, Show)
 
 -- | Procedure is a ghost-lang construct for making reusable building
 -- blocks. A procedure is carrying a set of parameter names and a set
@@ -111,14 +119,29 @@ data Operation a where
     -- ^ Unresolved procedure.
     deriving (Generic, Show)
 
-instance Serialize Value
-instance Serialize a => Serialize (Program a)
-instance Serialize a => Serialize (Pattern a)
-instance Serialize a => Serialize (Procedure a)
-instance Serialize a => Serialize (Operation a)
+-- | Expand the list of module segments to a module name.
+expandModuleName :: [ModuleSegment] -> Text
+expandModuleName = T.intercalate "."
 
--- | Tailor made an Eq instance for Operation which not include
--- SourcePos. Needed for testing purposes.
+-- | Declaration instances.
+instance Declaration ModuleDecl where
+    expName (ModuleDecl _ xs) = expandModuleName xs
+    srcPos (ModuleDecl pos _) = pos
+
+instance Declaration ImportDecl where
+    expName (ImportDecl xs) = expandModuleName xs
+
+-- | Tailor made Eq instance for ModuleDecl.
+instance Eq ModuleDecl where
+    (ModuleDecl _ x) == (ModuleDecl _ x') = x == x'
+
+-- | Taillor made Eq instance for Pattern.
+instance Eq a => Eq (Pattern a) where
+    (Pattern _ x y z) == (Pattern _ x' y' z') = x == x' &&
+                                                y == y' &&
+                                                z == z'
+
+-- | Tailor made Eq instance for Operation.
 instance Eq a => Eq (Operation a) where
     (Invoke x)         == (Invoke x')          = x == x'
     (Loop x y)         == (Loop x' y')         = x == x' && y == y'
@@ -126,6 +149,12 @@ instance Eq a => Eq (Operation a) where
     (Call x y)         == (Call x' y')         = x == x' && y == y'
     (Unresolved _ x y) == (Unresolved _ x' y') = x == x' && y == y'
     _                  == _                    = False
+
+instance Serialize Value
+instance Serialize a => Serialize (Program a)
+instance Serialize a => Serialize (Pattern a)
+instance Serialize a => Serialize (Procedure a)
+instance Serialize a => Serialize (Operation a)
 
 -- | Serialize instance for Text as it's not included in the Cereal
 -- library.

@@ -13,6 +13,7 @@ import System.Directory (getTemporaryDirectory, removeFile)
 import System.FilePath
 import System.Posix.Process (getProcessID)
 import Test.HUnit
+import Text.Parsec.Pos (initialPos) 
 
 -- | Test that encoding followed by a decode result in the original
 -- value.
@@ -30,7 +31,7 @@ writeReadFile =
             removeFile
             (\file -> do
                let program = Program "program" 
-                             [ Pattern "pattern" 1
+                             [ Pattern (initialPos "") "pattern" 1
                                [ Invoke Instr1
                                ]
                              ]

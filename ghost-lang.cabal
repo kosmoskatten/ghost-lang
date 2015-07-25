@@ -23,6 +23,7 @@ test-suite ghost-lang-test
                        GhostLang.InterpreterProps
                        GhostLang.InterpreterMProps
                        GhostLang.IntrinsicTests
+                       GhostLang.LinkerTests
                        GhostLang.ParserGenerators
                        GhostLang.SerializationTests
   build-depends:       base
@@ -51,6 +52,7 @@ library
                        GhostLang.Interpreter
                        GhostLang.InterpreterM
                        GhostLang.Intrinsic
+                       GhostLang.Linker
                        GhostLang.Scope
                        GhostLang.Serialize
                        GhostLang.Types

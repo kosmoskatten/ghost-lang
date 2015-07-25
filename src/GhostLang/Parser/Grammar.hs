@@ -46,9 +46,9 @@ ghostModuleDef =
 -- | Parse a module declaration. I.e. the keyword "module" followed by a
 -- module path.
 moduleDecl :: Parser ModuleDecl
-moduleDecl = do
-  reserved "module"
-  ModuleDecl <$> moduleSegment `sepBy1` char '.'
+moduleDecl =
+  ModuleDecl <$> getPosition <* reserved "module" 
+             <*> moduleSegment `sepBy1` char '.'
 
 -- | Parse an import declaration. I.e. the keyword "import" followed
 -- by a module path.
@@ -84,9 +84,9 @@ intrinsicCommand = Delay <$> (reserved "Delay" *> timeUnitRef)
 
 -- | Parse a pattern from the stream.
 pattern :: Parser (Pattern IntrinsicSet)
-pattern = do
-  reserved "pattern"
-  Pattern <$> packedIdentifier 
+pattern =
+  Pattern <$> getPosition <* reserved "pattern"
+          <*> packedIdentifier 
           <*> (reserved "with" >> reserved "weight" *> nonNegative)
           <*> withinBraces opsList
 

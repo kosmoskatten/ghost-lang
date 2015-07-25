@@ -15,6 +15,18 @@ import GhostLang.InterpreterTests ( oneLevelCallNoParamsPattern
                                   , longChainTwoParamsPattern
                                   )
 import GhostLang.IntrinsicTests (delayCommand)
+import GhostLang.LinkerTests ( checkEmptyModule
+                             , checkOneNonMainModule
+                             , checkMainModuleWithoutPatterns
+                             , checkOtherModuleWithPatterns
+                             , checkDuplicateMainModules
+                             , checkSingleCorrectMainModule
+                             , checkTwoCorrectModules
+                             , findUndefinedProc
+                             , findDefinedProc
+                             , findDoubleDefinedProc
+                             , resolveLocalProc
+                             )
 import GhostLang.ParserProps ( ghostModuleDefP
                              , moduleDeclP
                              , importDeclP
@@ -56,6 +68,23 @@ testSuite =
       ]
     , testGroup "GhostLang.IntrinsicTests"
       [ testCase "DelayCommand" delayCommand
+      ]
+    , testGroup "GhostLang.LinkerTests - prelink checks"
+      [ testCase "CheckEmptyModule" checkEmptyModule
+      , testCase "CheckOneNonMainModule" checkOneNonMainModule
+      , testCase "CheckMainModuleWithoutPatterns" checkMainModuleWithoutPatterns
+      , testCase "CheckOtherModuleWithPatterns" checkOtherModuleWithPatterns
+      , testCase "CheckDuplicateMainModules" checkDuplicateMainModules
+      , testCase "CheckSingleCorrectMainModule" checkSingleCorrectMainModule
+      , testCase "CheckTwoCorrectModules" checkTwoCorrectModules
+      ]
+    , testGroup "GhostLang.LinkerTests - proc lookup"
+      [ testCase "FindUndefinedProc" findUndefinedProc
+      , testCase "FindDefinedProc" findDefinedProc
+      , testCase "FindDoubleDefinedProc" findDoubleDefinedProc
+      ]
+    , testGroup "GhostLang.LinkerTests - resolving"
+      [ testCase "ResolveLocalProc" resolveLocalProc
       ]
     , testGroup "GhostLang.ParserProps"
       [ testProperty "GhostModuleDefinition" ghostModuleDefP

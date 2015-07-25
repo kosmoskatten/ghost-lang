@@ -41,7 +41,7 @@ instance Stringify a => Stringify (GhostModule a) where
               tell $ printf "%s\n" (stringify proc)
 
 instance Stringify ModuleDecl where
-    stringify (ModuleDecl segs) = printf "module %s" (str segs)
+    stringify (ModuleDecl _ segs) = printf "module %s" (str segs)
         where str = T.unpack . T.intercalate "."
 
 instance Stringify ImportDecl where
@@ -63,7 +63,7 @@ instance Stringify IntrinsicSet where
     stringify (Delay t) = printf "Delay %s" (stringify t)
 
 instance Stringify a => Stringify (Pattern a) where
-    stringify (Pattern n w ops) =
+    stringify (Pattern _ n w ops) =
         printf "pattern %s with weight %ld { %s }" 
                (T.unpack n) w (stringify ops)
 

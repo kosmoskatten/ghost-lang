@@ -134,15 +134,15 @@ nonNestedConcPattern (NonNestedConcPattern p) =
       assert $ concs == concCmds counter
 
 opsLength :: Pattern a -> Int64
-opsLength (Pattern _ _ ops) = fromIntegral $ length ops
+opsLength (Pattern _ _ _ ops) = fromIntegral $ length ops
 
 patternName :: Pattern a -> Text
-patternName (Pattern name _ _) = name
+patternName (Pattern _ name _ _) = name
 
 -- | Count the number of invoke instructions (incl. expanding the
 -- loops) and the number of loop commands.
 countInvokesAndNonNestedLoops :: Pattern a -> (Int64, Int64)
-countInvokesAndNonNestedLoops (Pattern _ _ ops) = foldl' count (0, 0) ops
+countInvokesAndNonNestedLoops (Pattern _ _ _ ops) = foldl' count (0, 0) ops
     where
       count :: (Int64, Int64) -> Operation a -> (Int64, Int64)
       count (x, y) (Invoke _)        = (x + 1, y)
@@ -154,7 +154,7 @@ countInvokesAndNonNestedLoops (Pattern _ _ ops) = foldl' count (0, 0) ops
 -- | Count the number of invoke instructions (incl. expanding the
 -- concurrent sections) and the number of concurrently commands.
 countInvokesAndNonNestedConcs :: Pattern a -> (Int64, Int64)
-countInvokesAndNonNestedConcs (Pattern _ _ ops) = foldl' count (0, 0) ops
+countInvokesAndNonNestedConcs (Pattern _ _ _ ops) = foldl' count (0, 0) ops
     where
       count :: (Int64, Int64) -> Operation a -> (Int64, Int64)
       count (x, y) (Invoke _)          = (x + 1, y)

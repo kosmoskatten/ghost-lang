@@ -14,13 +14,14 @@ import GhostLang.Types ( Value (..)
                        , Operation (..)
                        )
 import Test.HUnit
+import Text.Parsec.Pos (initialPos)
 import Text.Printf (printf)
 
 -- | Test case to verify that the Delay command is delaying the
 -- intended duration of time.
 delayCommand :: Assertion
 delayCommand = do
-  let p = Pattern "pa1" 1
+  let p = Pattern (initialPos "") "pa1" 1
           [ Invoke $ Delay $ MSec (Literal 500)
           ]
   -- Time the duration for the pattern execution.
