@@ -30,7 +30,7 @@ writeReadFile =
     bracket getTempFilePath
             removeFile
             (\file -> do
-               let program = Program "program" 
+               let program = Program
                              [ Pattern (initialPos "") "pattern" 1
                                [ Invoke Instr1
                                ]

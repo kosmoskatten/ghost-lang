@@ -88,8 +88,5 @@ validId = T.pack <$> validId'
                                                 ['0'..'9'])
 
 moduleSegment :: Gen ModuleSegment
-moduleSegment = T.pack <$> moduleSegment'
-    where
-      moduleSegment' = 
-          (:) <$> elements ['A'..'Z']
-              <*> listOf (elements $ ['a'..'z'] ++ ['0'..'9'] ++ "-_")
+moduleSegment = (:) <$> elements ['A'..'Z']
+                    <*> listOf (elements $ ['a'..'z'] ++ ['0'..'9'] ++ "-_")

@@ -1,4 +1,4 @@
-module GhostLang.Parser.Tokenizer 
+module GhostLang.Compiler.Tokenizer 
     ( comma
     , identifier
     , nonNegative
@@ -17,7 +17,6 @@ import Text.Parsec
 import Text.Parsec.Language (emptyDef)
 import Text.Parsec.String (Parser)
 import Text.Printf (printf)
-import qualified Data.Text as Text
 import qualified Text.Parsec.Token as Token
 
 -- | Parse a comma from the stream.
@@ -43,7 +42,7 @@ moduleSegment = do
   str <- identifier
   when (isLower $ head str) $ 
        parserFail "Module part must start with capital letter"
-  return $ Text.pack str
+  return str
 
 -- | Try to parse the given string as a reserved work from the stream.
 reserved :: String -> Parser ()

@@ -1,5 +1,5 @@
 {-# LANGUAGE TupleSections #-}
-module GhostLang.Parser.Grammar
+module GhostLang.Compiler.Grammar
     ( ghostModuleDef
     , moduleDecl
     , importDecl
@@ -22,14 +22,14 @@ import GhostLang.Types ( Label
                        , Procedure (..)
                        , Operation (..)
                        )
-import GhostLang.Parser.Tokenizer ( comma
-                                  , identifier
-                                  , nonNegative
-                                  , moduleSegment
-                                  , reserved
-                                  , whiteSpace
-                                  , withinBraces
-                                  , withinParens )
+import GhostLang.Compiler.Tokenizer ( comma
+                                    , identifier
+                                    , nonNegative
+                                    , moduleSegment
+                                    , reserved
+                                    , whiteSpace
+                                    , withinBraces
+                                    , withinParens )
 import Text.Parsec
 import Text.Parsec.String (Parser)
 import qualified Data.Text as T

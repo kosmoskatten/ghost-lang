@@ -16,18 +16,25 @@ module GhostLang.LinkerTests
 
     -- Procedure resolving tests.
     , resolveLocalProc
+    , resolveImportedProc
+    , resolveUnimportedProc
+    , resolveAmbiguousProc
+    , resolveConflictingArityProc
     ) where
 
 import Data.List (sortBy)
+import GhostLang.Compiler.Linker ( ProcDef
+                                 , semanticChecks
+                                 , resolve
+                                 , buildProcMap
+                                 , findProcDefs
+                                 )
 import GhostLang.Intrinsic (IntrinsicSet)
-import GhostLang.Linker ( ProcDef
-                        , semanticChecks
-                        , resolve
-                        , buildProcMap
-                        , findProcDefs
-                        )
 import GhostLang.Types ( Label
+                       , ModuleSegment
+                       , Value (..)
                        , GhostModule (..)
+                       , ImportDecl (..)
                        , ModuleDecl (..)
                        , Pattern (..)
                        , Procedure (..)
@@ -42,8 +49,8 @@ checkEmptyModule :: Assertion
 checkEmptyModule = do
     let mods = [] :: [GhostModule IntrinsicSet]
     case semanticChecks mods of
-      Right _ -> assertBool "Shall not accept empty list" False
-      _       -> return ()
+      Right _  -> assertBool "Shall not accept empty list" False
+      Left _   -> return ()
 
 -- | Test that the semanic checker is rejecting a single module which
 -- name not is main.
@@ -51,8 +58,8 @@ checkOneNonMainModule :: Assertion
 checkOneNonMainModule = do
   let mods = [GhostModule (moduleDecl ["Other"]) [] [emptyPattern] []]
   case semanticChecks mods of
-    Right _ -> assertBool "Shall not accept single non main module" False
-    _       -> return ()
+    Right _  -> assertBool "Shall not accept single non main module" False
+    Left _   -> return ()
 
 -- | Test that the semantic checker is rejecting a main module without
 -- any patterns.
@@ -60,8 +67,8 @@ checkMainModuleWithoutPatterns :: Assertion
 checkMainModuleWithoutPatterns = do
   let mods = [GhostModule (moduleDecl ["Main"]) [] [] []]
   case semanticChecks mods of
-    Right _ -> assertBool "Shall not accept main module without patterns" False
-    _       -> return ()
+    Right _  -> assertBool "Shall not accept main module without patterns" False
+    Left _   -> return ()
 
 -- | Test that the semantic checker is rejecting an other module
 -- having patterns.
@@ -71,8 +78,8 @@ checkOtherModuleWithPatterns = do
              , GhostModule (moduleDecl ["Other"]) [] [emptyPattern] []
              ]
   case semanticChecks mods of
-    Right _ -> assertBool "Shall not accept other module with patterns" False
-    _       -> return ()
+    Right _  -> assertBool "Shall not accept other module with patterns" False
+    Left _   -> return ()
 
 -- | Test that the semantic checker is rejecting duplicate main modules.
 checkDuplicateMainModules :: Assertion
@@ -81,8 +88,8 @@ checkDuplicateMainModules = do
              , GhostModule (moduleDecl ["Main"]) [] [emptyPattern] []
              ]
   case semanticChecks mods of
-    Right _ -> assertBool "Shall reject duplicate main modules" False
-    _       -> return ()
+    Right _  -> assertBool "Shall reject duplicate main modules" False
+    Left _   -> return ()
 
 -- | Test that the semantic checker is accepting a single main module
 -- with one pattern.
@@ -136,8 +143,7 @@ resolveLocalProc :: Assertion
 resolveLocalProc = do
   let mods = [ GhostModule (moduleDecl ["Main"]) []
                            [ Pattern (initialPos "") "bar" 1
-                                         [ Unresolved (initialPos "") "foo" []
-                                         ]
+                                         [ Unresolved (initialPos "") "foo" [] ]
                            ] [ emptyProcedure ] ]
       -- The expected result with the unresolved reference resolved.
       res  = [ GhostModule (moduleDecl ["Main"]) []
@@ -147,9 +153,85 @@ resolveLocalProc = do
   case resolve mods of
     Right mods' -> res @=? mods'
     Left _      -> assertBool "Shall accept" False
+
+-- | Resolve a module with a reference to an imported procedure.
+resolveImportedProc :: Assertion
+resolveImportedProc = do
+  let mods = [ GhostModule (moduleDecl ["Main"]) 
+                           [ ImportDecl ["Other", "Module"] ]
+                           [ Pattern (initialPos "") "bar" 1
+                                         [ Unresolved (initialPos "") "foo" [] ]
+                           ] []
+             , GhostModule (moduleDecl ["Other", "Module"]) [] []
+                           [ emptyProcedure ]
+             ]
+      -- The expected result.
+      res  = [ GhostModule (moduleDecl ["Main"]) 
+                           [ ImportDecl ["Other", "Module"] ]
+                           [ Pattern (initialPos "") "bar" 1
+                                         [ Call emptyProcedure [] ]
+                           ] []
+             , GhostModule (moduleDecl ["Other", "Module"]) [] []
+                           [ emptyProcedure ]
+             ]
+
+  case resolve mods of
+    Right mods' -> res @=? mods'
+    Left _      -> assertBool "Shall accept" False
                            
 
-moduleDecl :: [Label] -> ModuleDecl
+-- | Try to resolve a module with an unresolvable (unimported)
+-- procedure.
+resolveUnimportedProc :: Assertion
+resolveUnimportedProc = do
+  let mods = [ GhostModule (moduleDecl ["Main"]) 
+                           []
+                           [ Pattern (initialPos "") "bar" 1
+                                         [ Unresolved (initialPos "") "foo" [] ]
+                           ] []
+             , GhostModule (moduleDecl ["Other", "Module"]) [] []
+                           [ emptyProcedure ]
+             ]
+
+  case resolve mods of
+    Right _  -> assertBool "Shall not accept unresolvable proc" False
+    Left _   -> return ()
+
+-- | Try to resolve an ambiguous procedure.
+resolveAmbiguousProc :: Assertion
+resolveAmbiguousProc = do
+  let mods = [ GhostModule (moduleDecl ["Main"]) 
+                           [ ImportDecl ["Other", "Module"]
+                           , ImportDecl ["Other", "Module2"] ]
+                           [ Pattern (initialPos "") "bar" 1
+                                         [ Unresolved (initialPos "") "foo" [] ]
+                           ] []
+             , GhostModule (moduleDecl ["Other", "Module"]) [] []
+                           [ emptyProcedure ]
+             , GhostModule (moduleDecl ["Other", "Module2"]) [] []
+                           [ emptyProcedure ]
+             ]    
+
+  case resolve mods of
+    Right _  -> assertBool "Shall not accept ambiguous definitions" False
+    Left _   -> return ()
+
+-- | Try to resolve a procedure with different arity at definition and
+-- use.
+resolveConflictingArityProc :: Assertion
+resolveConflictingArityProc = do
+    let mods = [ GhostModule (moduleDecl ["Main"]) 
+                           []
+                           [ Pattern (initialPos "") "bar" 1
+                                         [ Unresolved (initialPos "") "foo" 
+                                                      [Literal 1] ]
+                           ] [emptyProcedure]
+               ]
+    case resolve mods of
+      Right _  -> assertBool "Shall not accept conflicting arity" False
+      Left _   -> return ()
+
+moduleDecl :: [ModuleSegment] -> ModuleDecl
 moduleDecl = ModuleDecl (initialPos "")
 
 emptyPattern :: Pattern IntrinsicSet

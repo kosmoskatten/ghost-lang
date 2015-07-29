@@ -25,7 +25,7 @@ import Text.Parsec.Pos (initialPos)
 
 -- | Arbitrary instance for Program.
 instance Arbitrary a => Arbitrary (Program a) where
-    arbitrary = Program <$> arbitrary <*> (listOf arbitrary)
+    arbitrary = Program <$> (listOf arbitrary)
 
 -- | Generate a label with at least length 1.
 instance Arbitrary Label where

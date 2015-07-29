@@ -1,8 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
-module GhostLang.Linker
+module GhostLang.Compiler.Linker
     ( ProcDef
     , ProcMap
-    , checkAndLink
     , linkProgram
     , semanticChecks
     , resolve
@@ -15,6 +14,7 @@ import Control.Monad (forM_, foldM)
 import Control.Monad.Writer (Writer, execWriter, runWriter, tell)
 import Data.List (foldl')
 import GhostLang.Types ( Label
+                       , ModuleSegment
                        , Value
                        , Declaration (..)
                        , GhostModule (..)
@@ -26,12 +26,8 @@ import GhostLang.Types ( Label
 import Text.Printf (printf)
 import qualified Data.Map.Strict as Map
 
-type ProcDef a = (Label, Procedure a)
+type ProcDef a = (ModuleSegment, Procedure a)
 type ProcMap a = Map.Map Label [ProcDef a]
-
--- | Semantically check and link a list of ghost modules to a program.
-checkAndLink :: [GhostModule a] -> Either String (Program a)
-checkAndLink xs = semanticChecks xs >>= linkProgram
 
 -- | Link several ghost modules to a program. Assumes:
 -- 1. Non empty set of ghost modules.
@@ -39,13 +35,15 @@ checkAndLink xs = semanticChecks xs >>= linkProgram
 -- 3. Module "Main" have at least one pattern.
 -- 4. No other modules implement any patterns.
 linkProgram :: [GhostModule a] -> Either String (Program a)
-linkProgram = undefined
+linkProgram xs = semanticChecks xs >>=
+                 resolve           >>=
+                 makeProgram
 
 -- | Perform semantic checks of the modules. If everything is ok the
 -- same set of modules is returned.
 semanticChecks :: [GhostModule a] -> Either String [GhostModule a]
 semanticChecks xs = 
-    uniqueMainModule xs >>= 
+    uniqueMainModule xs        >>= 
     mainModuleMustHavePatterns >>=
     otherMustNotHavePatterns
 
@@ -115,12 +113,13 @@ resolve xs = do
           Procedure l ls <$> mapM (resolveOp procMap imports) ops
 
 -- | The workhorse doing the real resolving.
-resolveOp :: ProcMap a -> [Label] -> Operation a -> Writer String (Operation a)
+resolveOp :: ProcMap a -> [ModuleSegment] -> Operation a 
+          -> Writer String (Operation a)
 resolveOp procMap importDecl unr@(Unresolved pos l params) =
   case findProcDefs l procMap of
     -- No module is defining a procedure with this name.
     []      -> do
-      tell $ printf "Procedure '%s' can not be resolved: %s\n"
+      tell $ printf "Procedure %s can not be resolved: %s\n"
                     (show l) (show pos)
       return unr
     -- At least one module is defining a procedure with this
@@ -131,7 +130,7 @@ resolveOp procMap importDecl unr@(Unresolved pos l params) =
           -- procedure. Recommend the user to import one of the
           -- modules in the defMods list.
           [] -> do
-            tell $ printf "Procedure '%s' can not be resoled: %s\n"
+            tell $ printf "Procedure %s can not be resoled: %s\n"
                           (show l) (show pos)
             tell "Try import one of:\n"
             forM_ defMods $ \defMod ->
@@ -145,13 +144,14 @@ resolveOp procMap importDecl unr@(Unresolved pos l params) =
           [(_, proc)] -> 
               if params `sameArityAs` proc then return $ Call proc params
               else do
-                tell $ printf "Procedure '%' wrong number of arguments: %s\n"
+                tell $ printf "Procedure %s wrong number of arguments: %s\n"
                               (show l) (show pos)
                 return unr
 
           -- Ambiguous which procedure definition to take.
           founds -> do
-            tell $ printf "Ambiguous of which '%s' to choose. Defined in:\n"
+            tell $ printf "Ambiguous of which %s to choose. Defined in:\n"
+                          (show l)
             forM_ founds $ \defMod ->
                 tell $ printf " %s\n" (show $ fst defMod)
             return unr
@@ -161,6 +161,13 @@ resolveOp procMap importDecl unr@(Unresolved pos l params) =
 
 -- Non resolvable operation. Just return the input op.
 resolveOp _ _ op = return op
+
+-- | Clean away module stuff and make a program.
+makeProgram :: [GhostModule a] -> Either String (Program a)
+makeProgram xs =
+    case getMainModules xs of
+      [GhostModule _ _ pts _] -> Right $ Program pts
+      _                       -> Left "Too few/many instances of \"Main\""
 
 -- | Build the procedure map from the list of parsed modules. The key
 -- into the map is the procedure's name, and the entry is a list of
@@ -173,14 +180,14 @@ buildProcMap = foldl' visitModule Map.empty
           let (l, ps) = modInfo mod'
           in foldl' (visitProc l) acc ps
 
-      visitProc :: Label -> ProcMap a -> Procedure a -> ProcMap a
+      visitProc :: ModuleSegment -> ProcMap a -> Procedure a -> ProcMap a
       visitProc l acc proc = 
           Map.alter (\e -> case e of
                              Just entry -> Just ((l, proc):entry)
                              Nothing    -> Just [(l, proc)]
                     ) (pname proc) acc
 
-      modInfo :: GhostModule a -> (Label, [Procedure a])
+      modInfo :: GhostModule a -> (ModuleSegment, [Procedure a])
       modInfo (GhostModule l _ _ ps) = (expName l, ps)
 
       pname :: Procedure a -> Label
@@ -199,7 +206,7 @@ getNonMainModules = filter g
     where g (GhostModule mdecl _ _ _) = "Main" /= expName mdecl
 
 -- | Tailor made intersect of a list of labels and a set of proc defs.
-intersectProcDefs :: [Label] -> [ProcDef a] -> [ProcDef a]
+intersectProcDefs :: [ModuleSegment] -> [ProcDef a] -> [ProcDef a]
 intersectProcDefs xs = filter inList
     where inList (lbl, _) = lbl `elem` xs
 

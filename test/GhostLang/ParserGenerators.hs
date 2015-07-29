@@ -5,6 +5,7 @@ module GhostLang.ParserGenerators where
 
 import Control.Monad (forM_)
 import Control.Monad.Writer (execWriter, tell)
+import Data.List (intercalate)
 import GhostLang.CommonGenerators ()
 import GhostLang.Intrinsic (IntrinsicSet (..))
 import GhostLang.Types ( Label
@@ -42,11 +43,11 @@ instance Stringify a => Stringify (GhostModule a) where
 
 instance Stringify ModuleDecl where
     stringify (ModuleDecl _ segs) = printf "module %s" (str segs)
-        where str = T.unpack . T.intercalate "."
+        where str = intercalate "."
 
 instance Stringify ImportDecl where
     stringify (ImportDecl segs) = printf "import %s" (str segs)
-        where str = T.unpack . T.intercalate "."
+        where str = intercalate "."
 
 instance Stringify Value where
     stringify (Literal v)      = printf "literal(%ld)" v

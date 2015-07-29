@@ -18,6 +18,7 @@ module GhostLang.Types
     , Operation (..)
     ) where
 
+import Data.List (intercalate)
 import Data.Serialize (Serialize (..), getByteString, putByteString)
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
@@ -33,12 +34,12 @@ import Text.Parsec.Pos ( SourcePos
 import qualified Data.Text as T
 
 type Label         = Text
-type ModuleSegment = Text
+type ModuleSegment = FilePath
 type Weight        = Int64
 
 -- | Type class to help work with declarations.
 class Declaration a where
-    expName :: a -> Text
+    expName :: a -> ModuleSegment
     srcPos :: a -> SourcePos
     srcPos = error "Not implemented"
 
@@ -76,10 +77,10 @@ data Value = Literal !Int64
             -- name. After lookup is become one of the above.
     deriving (Eq, Generic, Show)
 
--- | A representation of a ghost-lang program. A program has a name
--- and a set of patterns.
+-- | A representation of a linked ghost-lang program. A program has a
+-- set of patterns.
 data Program a where
-    Program :: !Label -> ![Pattern a] -> Program a
+    Program :: ![Pattern a] -> Program a
     deriving (Eq, Generic, Show)
 
 -- | Pattern is a top level procedure carrying a statistical weight
@@ -120,8 +121,8 @@ data Operation a where
     deriving (Generic, Show)
 
 -- | Expand the list of module segments to a module name.
-expandModuleName :: [ModuleSegment] -> Text
-expandModuleName = T.intercalate "."
+expandModuleName :: [ModuleSegment] -> FilePath
+expandModuleName = intercalate "."
 
 -- | Declaration instances.
 instance Declaration ModuleDecl where

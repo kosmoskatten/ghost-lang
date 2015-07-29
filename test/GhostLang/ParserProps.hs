@@ -10,6 +10,16 @@ module GhostLang.ParserProps
     , operationP
     ) where
 
+import GhostLang.Compiler.Grammar ( ghostModuleDef
+                                  , moduleDecl
+                                  , importDecl
+                                  , valueRef
+                                  , timeUnitRef
+                                  , intrinsicCommand
+                                  , pattern
+                                  , procedure
+                                  , operation
+                                  )
 import GhostLang.Intrinsic (IntrinsicSet)
 import GhostLang.Types ( GhostModule
                        , ModuleDecl
@@ -20,16 +30,6 @@ import GhostLang.Types ( GhostModule
                        , Procedure
                        , Operation
                        )
-import GhostLang.Parser.Grammar ( ghostModuleDef
-                                , moduleDecl
-                                , importDecl
-                                , valueRef
-                                , timeUnitRef
-                                , intrinsicCommand
-                                , pattern
-                                , procedure
-                                , operation
-                                )
 import GhostLang.CommonGenerators
 import GhostLang.ParserGenerators
 import Text.Parsec (parse)

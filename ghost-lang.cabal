@@ -52,19 +52,21 @@ library
                        GhostLang.Interpreter
                        GhostLang.InterpreterM
                        GhostLang.Intrinsic
-                       GhostLang.Linker
                        GhostLang.Scope
                        GhostLang.Serialize
                        GhostLang.Types
-                       GhostLang.Parser
-                       GhostLang.Parser.Grammar
-                       GhostLang.Parser.Tokenizer
+                       GhostLang.Compiler
+                       GhostLang.Compiler.Grammar
+                       GhostLang.Compiler.Linker
+                       GhostLang.Compiler.ModuleFileReader
+                       GhostLang.Compiler.Tokenizer
   build-depends:       base >= 4.7 && < 5
                      , async
                      , cereal
                      , cereal-conduit
                      , conduit-combinators
                      , containers
+                     , filepath
                      , mtl
                      , parsec
                      , stm
