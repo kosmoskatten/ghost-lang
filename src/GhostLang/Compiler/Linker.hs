@@ -68,7 +68,7 @@ mainModuleMustHavePatterns xs =
     let ys = getMainModules xs
         ps = foldl' numPatterns 0 ys
     in if ps > 0 then Right xs
-       else (Left "Module \"Main\" must have at least one pattern")
+       else Left "Module \"Main\" must have at least one pattern"
         where numPatterns n (GhostModule _ _ ps _) = n + length ps
 
 -- | Other modules are not allowed to implement any patterns.
@@ -158,6 +158,14 @@ resolveOp procMap importDecl unr@(Unresolved pos l params) =
       where
         sameArityAs :: [Value] -> Procedure a -> Bool
         sameArityAs xs (Procedure _ ys _) = length xs == length ys
+
+-- Recursively resolve the operations in the loop body.
+resolveOp procMap importDecl (Loop v ops) =
+    Loop v <$> mapM (resolveOp procMap importDecl) ops
+
+-- Recursively resolve the operations in the concurrently body.
+resolveOp procMap importDecl (Concurrently ops) =
+    Concurrently <$> mapM (resolveOp procMap importDecl) ops
 
 -- Non resolvable operation. Just return the input op.
 resolveOp _ _ op = return op

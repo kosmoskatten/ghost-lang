@@ -17,6 +17,8 @@ module GhostLang.LinkerTests
     -- Procedure resolving tests.
     , resolveLocalProc
     , resolveImportedProc
+    , resolveInLoopProc
+    , resolveInConcProc
     , resolveUnimportedProc
     , resolveAmbiguousProc
     , resolveConflictingArityProc
@@ -179,6 +181,55 @@ resolveImportedProc = do
     Right mods' -> res @=? mods'
     Left _      -> assertBool "Shall accept" False
                            
+-- | Resolve a module with a procedure reference inside a loop.
+resolveInLoopProc :: Assertion
+resolveInLoopProc = do
+  let mods = [ GhostModule (moduleDecl ["Main"]) []
+                           [ Pattern (initialPos "") "bar" 1
+                                     [ Loop (Literal 1)
+                                            [ Unresolved (initialPos "")
+                                                         "foo" []
+                                            ]
+                                     ]
+                           ] [ emptyProcedure ]
+             ]
+      -- The expect result.
+      res  = [ GhostModule (moduleDecl ["Main"]) []
+                           [ Pattern (initialPos "") "bar" 1
+                                     [ Loop (Literal 1)
+                                            [ Call emptyProcedure []
+                                            ]
+                                     ]
+                           ] [ emptyProcedure]
+             ]
+  case resolve mods of
+    Right mods' -> res @=? mods'
+    Left _      -> assertBool "Shall accept" False
+
+-- | Resolve a module with a procedure reference inside a concurrent section.
+resolveInConcProc :: Assertion
+resolveInConcProc = do
+  let mods = [ GhostModule (moduleDecl ["Main"]) []
+                           [ Pattern (initialPos "") "bar" 1
+                                     [ Concurrently
+                                            [ Unresolved (initialPos "")
+                                                         "foo" []
+                                            ]
+                                     ]
+                           ] [ emptyProcedure ]
+             ]
+      -- The expect result.
+      res  = [ GhostModule (moduleDecl ["Main"]) []
+                           [ Pattern (initialPos "") "bar" 1
+                                     [ Concurrently
+                                            [ Call emptyProcedure []
+                                            ]
+                                     ]
+                           ] [ emptyProcedure]
+             ]
+  case resolve mods of
+    Right mods' -> res @=? mods'
+    Left _      -> assertBool "Shall accept" False
 
 -- | Try to resolve a module with an unresolvable (unimported)
 -- procedure.

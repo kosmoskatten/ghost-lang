@@ -104,7 +104,7 @@ addPending file = modify' $ \s -> s { pendList = addPending' file (pendList s) }
 nextPending :: ModuleReader (Maybe FilePath)
 nextPending = do
   xs <- pendList <$> get
-  return $ maybe Nothing (Just . fst) (find snd xs)
+  return $ fmap fst (find snd xs)
 
 togglePending :: FilePath -> ModuleReader ()
 togglePending file = 

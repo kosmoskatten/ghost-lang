@@ -21,9 +21,9 @@ import qualified Data.Text as T
 -- | Arbitrary instance for GhostModule.
 instance Arbitrary a => Arbitrary (GhostModule a) where
     arbitrary = GhostModule <$> arbitrary 
-                            <*> listOf arbitrary
-                            <*> listOf arbitrary   
-                            <*> listOf arbitrary
+                            <*> (resize 15 $ listOf arbitrary)
+                            <*> (resize 10 $ listOf arbitrary)
+                            <*> (resize 10 $ listOf arbitrary)
 
 -- | Arbitrary instance for ModuleDecl.
 instance Arbitrary ModuleDecl where
@@ -61,13 +61,13 @@ instance Arbitrary a => Arbitrary (Pattern a) where
     arbitrary = Pattern <$> pure (initialPos "")
                         <*> validId 
                         <*> choose (0, maxBound) 
-                        <*> listOf arbitrary
+                        <*> (resize 15 $ listOf arbitrary)
 
 -- | Arbitrary instance for Procedure.
 instance Arbitrary a => Arbitrary (Procedure a) where
     arbitrary = Procedure <$> validId
                           <*> listOf validId
-                          <*> listOf arbitrary
+                          <*> (resize 15 $ listOf arbitrary)
 
 -- | Arbitrary instance for Operation.
 instance Arbitrary a => Arbitrary (Operation a) where

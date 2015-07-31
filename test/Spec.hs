@@ -27,6 +27,8 @@ import GhostLang.LinkerTests ( checkEmptyModule
                              , findDoubleDefinedProc
                              , resolveLocalProc
                              , resolveImportedProc
+                             , resolveInLoopProc
+                             , resolveInConcProc
                              , resolveUnimportedProc
                              , resolveAmbiguousProc
                              , resolveConflictingArityProc
@@ -90,6 +92,8 @@ testSuite =
     , testGroup "GhostLang.LinkerTests - resolving"
       [ testCase "ResolveLocalProc" resolveLocalProc
       , testCase "ResolveImportedProc" resolveImportedProc
+      , testCase "ResolveInLoopProc" resolveInLoopProc
+      , testCase "ResolveInConcProc" resolveInConcProc
       , testCase "ResolveUnimportedProc" resolveUnimportedProc
       , testCase "ResolveAmbiguousProc" resolveAmbiguousProc
       , testCase "ResolveConflictingArityProc" resolveConflictingArityProc
