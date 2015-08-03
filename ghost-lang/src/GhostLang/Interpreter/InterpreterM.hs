@@ -43,14 +43,14 @@ import Control.Monad.State ( MonadState
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Text (Text)
 import GHC.Int (Int64)
-import GhostLang.Counter ( Counter (..) 
-                         , incInstrInvoked'
-                         , incLoopCmds'
-                         , incConcCmds'
-                         , incPatternRuns'
-                         , incProcCalls'
-                         )
 import GhostLang.Interpreter.Scope (Scope, emptyScope, lookup)
+import GhostLang.RuntimeState.Counter ( Counter (..) 
+                                      , incInstrInvoked'
+                                      , incLoopCmds'
+                                      , incConcCmds'
+                                      , incPatternRuns'
+                                      , incProcCalls'
+                                      )
 import GhostLang.Types (Value (..), TimeUnit (..))
 import Prelude hiding (lookup)
 

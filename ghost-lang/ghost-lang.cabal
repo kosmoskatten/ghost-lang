@@ -46,7 +46,6 @@ test-suite ghost-lang-test
 library
   hs-source-dirs:      src
   exposed-modules:     GhostLang
-                       GhostLang.Counter
                        GhostLang.Serialize
                        GhostLang.Types
                        GhostLang.Compiler
@@ -59,6 +58,8 @@ library
                        GhostLang.Interpreter.InterpreterM
                        GhostLang.Interpreter.Intrinsic
                        GhostLang.Interpreter.Scope
+                       GhostLang.RuntimeState
+                       GhostLang.RuntimeState.Counter
   build-depends:       base >= 4 && < 5
                      , async
                      , cereal

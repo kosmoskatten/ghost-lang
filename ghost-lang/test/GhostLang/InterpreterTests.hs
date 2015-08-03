@@ -8,11 +8,11 @@ module GhostLang.InterpreterTests
     ) where
 
 import Control.Concurrent.STM (newTVarIO, readTVarIO)
-import GhostLang.Counter ( Counter (..)
-                         , emptyCounter
-                         , getProcCalls
-                         , getTotalProcCalls
-                         )
+import GhostLang.RuntimeState ( Counter (..)
+                              , emptyCounter
+                              , getProcCalls
+                              , getTotalProcCalls
+                              )
 import GhostLang.InterpreterGenerators (TestInstrSet (..))
 import GhostLang.Interpreter.InstructionSet (execPattern)
 import GhostLang.Interpreter.InterpreterM (runInterpreter)

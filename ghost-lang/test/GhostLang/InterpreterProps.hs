@@ -10,12 +10,6 @@ import Control.Monad (forM)
 import Data.List (foldl')
 import Data.Text (Text)
 import GHC.Int (Int64)
-import GhostLang.Counter ( Counter (..)
-                         , emptyCounter
-                         , getPatternRuns
-                         , getTotalPatternRuns
-                         , getTotalProcCalls
-                         )
 import GhostLang.InterpreterGenerators ( SimpleSequencePattern (..)
                                        , ManySimpleSequencePatterns (..)
                                        , NonNestedLoopPattern (..)
@@ -23,6 +17,12 @@ import GhostLang.InterpreterGenerators ( SimpleSequencePattern (..)
                                        )
 import GhostLang.Interpreter.InstructionSet (execPattern)
 import GhostLang.Interpreter.InterpreterM (runInterpreter)
+import GhostLang.RuntimeState ( Counter (..)
+                              , emptyCounter
+                              , getPatternRuns
+                              , getTotalPatternRuns
+                              , getTotalProcCalls
+                              )
 import GhostLang.Types ( Value (..)
                        , Procedure (..)
                        , Pattern (..)

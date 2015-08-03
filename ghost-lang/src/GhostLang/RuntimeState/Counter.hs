@@ -1,5 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
-module GhostLang.Counter
+module GhostLang.RuntimeState.Counter
     ( Counter (..)
     , emptyCounter
     , incInstrInvoked'
