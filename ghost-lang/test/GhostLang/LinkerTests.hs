@@ -31,7 +31,7 @@ import GhostLang.Compiler.Linker ( ProcDef
                                  , buildProcMap
                                  , findProcDefs
                                  )
-import GhostLang.Intrinsic (IntrinsicSet)
+import GhostLang.Interpreter (IntrinsicSet)
 import GhostLang.Types ( Label
                        , ModuleSegment
                        , Value (..)

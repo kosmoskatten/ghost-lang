@@ -11,7 +11,7 @@ module GhostLang.Compiler.Grammar
     , operation
     ) where
 
-import GhostLang.Intrinsic (IntrinsicSet (..))
+import GhostLang.Interpreter (IntrinsicSet (..))
 import GhostLang.Types ( Label
                        , GhostModule (..)
                        , ModuleDecl (..)

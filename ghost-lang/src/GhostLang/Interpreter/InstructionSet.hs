@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module GhostLang.InstructionSet
+module GhostLang.Interpreter.InstructionSet
     ( InstructionSet (..)
     , execPattern
     ) where
@@ -7,27 +7,27 @@ module GhostLang.InstructionSet
 import Control.Concurrent.Async (async, wait)
 import Control.Monad (replicateM_)
 import Data.Maybe (fromJust)
-import GhostLang.InterpreterM ( InterpreterM
-                              , State
-                              , runInterpreter
-                              , incInstrInvoked
-                              , incPatternRuns
-                              , incLoopCmds
-                              , incConcCmds
-                              , incProcCalls
-                              , evalValue
-                              , ask
-                              , get
-                              , local
-                              , liftIO
-                              )
+import GhostLang.Interpreter.InterpreterM ( InterpreterM
+                                          , State
+                                          , runInterpreter
+                                          , incInstrInvoked
+                                          , incPatternRuns
+                                          , incLoopCmds
+                                          , incConcCmds
+                                          , incProcCalls
+                                          , evalValue
+                                          , ask
+                                          , get
+                                          , local
+                                          , liftIO
+                                          )
+import GhostLang.Interpreter.Scope (fromList, lookup)
 import GhostLang.Types ( Label
                        , Value (..)
                        , Operation (..)
                        , Pattern (..)
                        , Procedure (..)
                        )
-import GhostLang.Scope (fromList, lookup)
 import Prelude hiding (lookup)
 
 -- | Instruction set type class.

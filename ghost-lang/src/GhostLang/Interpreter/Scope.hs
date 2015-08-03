@@ -1,4 +1,4 @@
-module GhostLang.Scope
+module GhostLang.Interpreter.Scope
     ( Scope
     , emptyScope
     , fromList

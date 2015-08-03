@@ -5,9 +5,9 @@ module GhostLang.IntrinsicTests
 
 import Control.Monad (when)
 import Data.Time (NominalDiffTime, diffUTCTime, getCurrentTime)
-import GhostLang.Intrinsic (IntrinsicSet (..))
-import GhostLang.InstructionSet (execPattern)
-import GhostLang.InterpreterM (runInterpreter)
+import GhostLang.Interpreter.Intrinsic (IntrinsicSet (..))
+import GhostLang.Interpreter.InstructionSet (execPattern)
+import GhostLang.Interpreter.InterpreterM (runInterpreter)
 import GhostLang.Types ( Value (..)
                        , TimeUnit (..)
                        , Pattern (..)

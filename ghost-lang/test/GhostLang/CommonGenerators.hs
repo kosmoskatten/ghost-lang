@@ -13,7 +13,7 @@ import GhostLang.Types ( Label
                        , Procedure (..)
                        , Operation (..)
                        )
-import GhostLang.Intrinsic (IntrinsicSet (..))
+import GhostLang.Interpreter (IntrinsicSet (..))
 import Test.QuickCheck
 import Text.Parsec.Pos (initialPos)
 import qualified Data.Text as T

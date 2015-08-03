@@ -47,10 +47,6 @@ library
   hs-source-dirs:      src
   exposed-modules:     GhostLang
                        GhostLang.Counter
-                       GhostLang.InstructionSet
-                       GhostLang.InterpreterM
-                       GhostLang.Intrinsic
-                       GhostLang.Scope
                        GhostLang.Serialize
                        GhostLang.Types
                        GhostLang.Compiler
@@ -58,6 +54,11 @@ library
                        GhostLang.Compiler.Linker
                        GhostLang.Compiler.ModuleFileReader
                        GhostLang.Compiler.Tokenizer
+                       GhostLang.Interpreter
+                       GhostLang.Interpreter.InstructionSet
+                       GhostLang.Interpreter.InterpreterM
+                       GhostLang.Interpreter.Intrinsic
+                       GhostLang.Interpreter.Scope
   build-depends:       base >= 4 && < 5
                      , async
                      , cereal

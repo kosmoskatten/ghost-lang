@@ -6,7 +6,7 @@ module GhostLang
     ) where
 
 import GhostLang.Compiler (compileAndLink)
-import GhostLang.Intrinsic (IntrinsicSet)
+import GhostLang.Interpreter (IntrinsicSet)
 import GhostLang.Types ( Label
                        , Weight
                        , Program (..)

@@ -1,13 +1,13 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GADTs         #-}
-module GhostLang.Intrinsic
+module GhostLang.Interpreter.Intrinsic
     ( IntrinsicSet (..)
     ) where
 
 import Control.Concurrent (threadDelay)
 import GHC.Generics (Generic)
-import GhostLang.InstructionSet (InstructionSet (..))
-import GhostLang.InterpreterM (evalTimeUnit, liftIO)
+import GhostLang.Interpreter.InstructionSet (InstructionSet (..))
+import GhostLang.Interpreter.InterpreterM (evalTimeUnit, liftIO)
 import GhostLang.Types (TimeUnit)
 
 -- | The data type of the intrinsic operations of ghost-lang.

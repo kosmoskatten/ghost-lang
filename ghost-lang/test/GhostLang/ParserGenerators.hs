@@ -7,7 +7,7 @@ import Control.Monad (forM_)
 import Control.Monad.Writer (execWriter, tell)
 import Data.List (intercalate)
 import GhostLang.CommonGenerators ()
-import GhostLang.Intrinsic (IntrinsicSet (..))
+import GhostLang.Interpreter (IntrinsicSet (..))
 import GhostLang.Types ( Label
                        , GhostModule (..)
                        , ModuleDecl (..)

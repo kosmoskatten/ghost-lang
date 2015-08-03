@@ -5,9 +5,9 @@ module GhostLang.InterpreterMProps
 
 import GHC.Int (Int64)
 import GhostLang.CommonGenerators ()
-import GhostLang.InterpreterM ( runInterpreterTest
-                              , evalValue
-                              , evalTimeUnit )
+import GhostLang.Interpreter.InterpreterM ( runInterpreterTest
+                                          , evalValue
+                                          , evalTimeUnit )
 import GhostLang.Types (Value (..), TimeUnit (..))
 import Test.QuickCheck
 import Test.QuickCheck.Monadic

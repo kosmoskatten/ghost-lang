@@ -6,7 +6,7 @@ module GhostLang.Compiler
 import GhostLang.Compiler.Linker (linkProgram)
 import GhostLang.Compiler.ModuleFileReader ( runModuleReader
                                            , parseGhostModules )
-import GhostLang.Intrinsic (IntrinsicSet)
+import GhostLang.Interpreter (IntrinsicSet)
 import GhostLang.Types (GhostModule, Program)
 
 -- | Compile and link a set of modules from file. The file pointed out is the

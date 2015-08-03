@@ -20,7 +20,7 @@ import GhostLang.Compiler.Grammar ( ghostModuleDef
                                   , procedure
                                   , operation
                                   )
-import GhostLang.Intrinsic (IntrinsicSet)
+import GhostLang.Interpreter (IntrinsicSet)
 import GhostLang.Types ( GhostModule
                        , ModuleDecl
                        , ImportDecl

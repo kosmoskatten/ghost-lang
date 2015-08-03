@@ -1,5 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module GhostLang.InterpreterM
+module GhostLang.Interpreter.InterpreterM
     ( InterpreterM (..)
     , State
     , runInterpreter
@@ -50,7 +50,7 @@ import GhostLang.Counter ( Counter (..)
                          , incPatternRuns'
                          , incProcCalls'
                          )
-import GhostLang.Scope (Scope, emptyScope, lookup)
+import GhostLang.Interpreter.Scope (Scope, emptyScope, lookup)
 import GhostLang.Types (Value (..), TimeUnit (..))
 import Prelude hiding (lookup)
 
