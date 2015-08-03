@@ -6,7 +6,7 @@ module GhostLang.Intrinsic
 
 import Control.Concurrent (threadDelay)
 import GHC.Generics (Generic)
-import GhostLang.Interpreter (InstructionSet (..))
+import GhostLang.InstructionSet (InstructionSet (..))
 import GhostLang.InterpreterM (evalTimeUnit, liftIO)
 import GhostLang.Types (TimeUnit)
 

@@ -13,7 +13,7 @@ import Data.Serialize (Serialize (..))
 import Data.Text (pack)
 import GHC.Generics (Generic)
 import GhostLang.CommonGenerators ()
-import GhostLang.Interpreter (InstructionSet (..))
+import GhostLang.InstructionSet (InstructionSet (..))
 import GhostLang.Types ( Label
                        , Value (..)
                        , Program (..)

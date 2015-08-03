@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module GhostLang.Interpreter
+module GhostLang.InstructionSet
     ( InstructionSet (..)
     , execPattern
     ) where

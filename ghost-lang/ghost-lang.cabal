@@ -47,7 +47,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     GhostLang
                        GhostLang.Counter
-                       GhostLang.Interpreter
+                       GhostLang.InstructionSet
                        GhostLang.InterpreterM
                        GhostLang.Intrinsic
                        GhostLang.Scope
