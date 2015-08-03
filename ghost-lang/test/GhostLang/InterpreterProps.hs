@@ -15,9 +15,12 @@ import GhostLang.InterpreterGenerators ( SimpleSequencePattern (..)
                                        , NonNestedLoopPattern (..)
                                        , NonNestedConcPattern (..)
                                        )
+import GhostLang.Interpreter (runPattern')
 import GhostLang.Interpreter.InstructionSet (execPattern)
 import GhostLang.Interpreter.InterpreterM (runInterpreter)
 import GhostLang.RuntimeState ( Counter (..)
+                              , Mode (..)
+                              , emptyNetworkConfiguration
                               , emptyCounter
                               , getPatternRuns
                               , getTotalPatternRuns
@@ -37,7 +40,7 @@ simpleSequencePattern :: SimpleSequencePattern -> Property
 simpleSequencePattern (SimpleSequencePattern p) =
     monadicIO $ do
       inpC    <- run (newTVarIO emptyCounter)
-      run (runInterpreter [inpC] $ execPattern p)
+      run (runPattern' p [inpC] emptyNetworkConfiguration Normal)
       counter <- run (readTVarIO inpC)
 
       -- As many instructions invoked as the number of operations in
@@ -68,7 +71,8 @@ manySimpleSequencePatterns (ManySimpleSequencePatterns ps) =
       globalC <- run (newTVarIO emptyCounter)
       locals  <- run (forM ps $ \p -> do
                         localC <- newTVarIO emptyCounter
-                        runInterpreter [globalC, localC] $ execPattern p
+                        runPattern' p [globalC, localC] 
+                                    emptyNetworkConfiguration Normal
                         return =<< readTVarIO localC
                      )
       global <- run (readTVarIO globalC)
@@ -94,7 +98,7 @@ nonNestedLoopPattern :: NonNestedLoopPattern -> Property
 nonNestedLoopPattern (NonNestedLoopPattern p) =
     monadicIO $ do
       inpC    <- run (newTVarIO emptyCounter)
-      run (runInterpreter [inpC] $ execPattern p)
+      run (runPattern' p [inpC] emptyNetworkConfiguration Normal)
       counter <- run (readTVarIO inpC)
 
       -- Count the number of invoke operations and loop
@@ -117,7 +121,7 @@ nonNestedConcPattern :: NonNestedConcPattern -> Property
 nonNestedConcPattern (NonNestedConcPattern p) =
     monadicIO $ do
       inpC    <- run (newTVarIO emptyCounter)
-      run (runInterpreter [inpC] $ execPattern p)
+      run (runPattern' p [inpC] emptyNetworkConfiguration Normal)
       counter <- run (readTVarIO inpC)
 
       -- Count the number of invoke operations and concurrently

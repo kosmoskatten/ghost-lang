@@ -8,7 +8,6 @@ import Control.Concurrent.Async (async, wait)
 import Control.Monad (replicateM_)
 import Data.Maybe (fromJust)
 import GhostLang.Interpreter.InterpreterM ( InterpreterM
-                                          , State
                                           , runInterpreter
                                           , incInstrInvoked
                                           , incPatternRuns
@@ -22,6 +21,7 @@ import GhostLang.Interpreter.InterpreterM ( InterpreterM
                                           , liftIO
                                           )
 import GhostLang.Interpreter.Scope (fromList, lookup)
+import GhostLang.RuntimeState (RuntimeState)
 import GhostLang.Types ( Label
                        , Value (..)
                        , Operation (..)
@@ -93,7 +93,7 @@ instance InstructionSet a => InstructionSet (Operation a) where
 
 -- | Run a set of operations concurrently. Each operation is started
 -- in its own monad stack instance.
-concurrently :: InstructionSet a => State -> [Operation a] -> IO ()
+concurrently :: InstructionSet a => RuntimeState -> [Operation a] -> IO ()
 concurrently state ops = do
   as <- mapM (async . runInterpreter state . execOperation) ops
   mapM_ wait as

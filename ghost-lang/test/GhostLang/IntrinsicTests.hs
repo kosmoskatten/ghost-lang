@@ -5,9 +5,9 @@ module GhostLang.IntrinsicTests
 
 import Control.Monad (when)
 import Data.Time (NominalDiffTime, diffUTCTime, getCurrentTime)
+import GhostLang.Interpreter (runPattern')
 import GhostLang.Interpreter.Intrinsic (IntrinsicSet (..))
-import GhostLang.Interpreter.InstructionSet (execPattern)
-import GhostLang.Interpreter.InterpreterM (runInterpreter)
+import GhostLang.RuntimeState (Mode (..), emptyNetworkConfiguration)
 import GhostLang.Types ( Value (..)
                        , TimeUnit (..)
                        , Pattern (..)
@@ -25,7 +25,7 @@ delayCommand = do
           [ Invoke $ Delay $ MSec (Literal 500)
           ]
   -- Time the duration for the pattern execution.
-  dur <- timedAction $ runInterpreter [] $ execPattern p
+  dur <- timedAction $ runPattern' p [] emptyNetworkConfiguration Normal
 
   -- Let the range be generous due to the conditions for testing.
   let minDur = realToFrac (0.5 :: Double)

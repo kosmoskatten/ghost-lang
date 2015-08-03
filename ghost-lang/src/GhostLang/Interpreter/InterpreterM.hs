@@ -1,7 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module GhostLang.Interpreter.InterpreterM
     ( InterpreterM (..)
-    , State
     , runInterpreter
     , runInterpreterTest
 
@@ -25,7 +24,6 @@ module GhostLang.Interpreter.InterpreterM
     ) where
 
 import Control.Concurrent.STM ( STM
-                              , TVar
                               , atomically
                               , modifyTVar'
                               )
@@ -44,13 +42,15 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Text (Text)
 import GHC.Int (Int64)
 import GhostLang.Interpreter.Scope (Scope, emptyScope, lookup)
-import GhostLang.RuntimeState.Counter ( Counter (..) 
-                                      , incInstrInvoked'
-                                      , incLoopCmds'
-                                      , incConcCmds'
-                                      , incPatternRuns'
-                                      , incProcCalls'
-                                      )
+import GhostLang.RuntimeState ( Counter (..) 
+                              , RuntimeState (..)
+                              , emptyRuntimeState
+                              , incInstrInvoked'
+                              , incLoopCmds'
+                              , incConcCmds'
+                              , incPatternRuns'
+                              , incProcCalls'
+                              )
 import GhostLang.Types (Value (..), TimeUnit (..))
 import Prelude hiding (lookup)
 
@@ -58,24 +58,22 @@ import Prelude hiding (lookup)
 -- implementing the InstructionSet type class.
 newtype InterpreterM a = 
     InterpreterM 
-      { extractInterpreterM :: ReaderT Scope (StateT State IO) a }
+      { extractInterpreterM :: ReaderT Scope (StateT RuntimeState IO) a }
   deriving (Functor, Applicative, Monad
-           , MonadReader Scope, MonadState State, MonadIO)
+           , MonadReader Scope, MonadState RuntimeState, MonadIO)
 
--- | Type alias for the interpreter state.
-type State = [TVar Counter]
-
--- | Run an InterpreterM action. The action will be supplied the given
--- counters and an empty reader set.
-runInterpreter :: State -> InterpreterM () -> IO ()
-runInterpreter counters interpreter =
-  evalStateT (runReaderT (extractInterpreterM interpreter) emptyScope) counters
+-- | Run an InterpreterM action. The action will be supplied a runtime
+-- state and an empty scope.
+runInterpreter :: RuntimeState -> InterpreterM () -> IO ()
+runInterpreter state interpreter =
+  evalStateT (runReaderT (extractInterpreterM interpreter) emptyScope) state
 
 -- | Run an interpreterM action for testing purposes. Run with an
 -- empty counter set.
 runInterpreterTest :: InterpreterM a -> IO a
 runInterpreterTest interpreter =
-    evalStateT (runReaderT (extractInterpreterM interpreter) emptyScope) []
+    evalStateT (runReaderT (extractInterpreterM interpreter) 
+                           emptyScope) emptyRuntimeState
 
 -- | Increase the counter for invoked instructions.
 incInstrInvoked :: InterpreterM ()
@@ -116,7 +114,9 @@ evalTimeUnit (MSec v) = (1000 *) . fromIntegral <$> evalValue v
 evalTimeUnit (Sec  v) = (1000000 *) . fromIntegral <$> evalValue v
 
 updateCounter :: (Counter -> Counter) -> InterpreterM ()
-updateCounter g = mapM_ (\tvar -> atomically' $ modifyTVar' tvar g) =<< get
+updateCounter g = do
+  counters' <- counters <$> get
+  mapM_ (\tvar -> atomically' $ modifyTVar' tvar g) counters'
 
 atomically' :: STM a -> InterpreterM a
 atomically' = liftIO . atomically
