@@ -1,6 +1,7 @@
 {-# LANGUAGE GADTs #-}
 module Command 
     ( Command (..)
+    , Mode (..)
     , parseCommand
     ) where
 
@@ -12,10 +13,15 @@ data Command where
     Load :: !FilePath -> Command
     Status :: Command
     List :: Command
+    Run :: !String -> !Mode -> Command
     Help :: Command
     Quit :: Command
     EmptyLine :: Command
     Unknown :: !String -> Command
+    deriving Show
+
+-- | Flag to tell which mode a pattern shall be executed in.
+data Mode = Normal | Trace | Dry
     deriving Show
 
 -- | Entry point for the parser.
@@ -29,6 +35,7 @@ aCommand :: Parser Command
 aCommand = spaces *> ( try load
                    <|> try status
                    <|> try list
+                   <|> try run
                    <|> try help 
                    <|> try quit 
                    <|> emptyLine )
@@ -46,6 +53,15 @@ status = string "status" >> spaces >> eof >> pure Status
 list :: Parser Command
 list = string "list-patterns" >> spaces >> eof >> pure List
 
+run :: Parser Command
+run = do
+  string "run-pattern" >> spaces
+  pattern' <- pattern
+  spaces
+  mode' <- mode
+  spaces >> eof
+  return $ Run pattern' mode'
+
 help :: Parser Command
 help = string "help" >> spaces >> eof >> pure Help
 
@@ -55,7 +71,16 @@ quit = string "quit" >> spaces >> eof >> pure Quit
 emptyLine :: Parser Command
 emptyLine = eof *> pure EmptyLine
 
+pattern :: Parser String
+pattern = (:) <$> oneOf ['a'..'z'] <*> many (oneOf patternChar)
+    where patternChar = ['a'..'z'] ++ ['A'..'Z'] ++ ['0'..'9'] ++ "._-"
+
 path :: Parser FilePath
 path = (:) <$> char '/' <*> many1 (oneOf pathChar)
     where pathChar = ['a'..'z'] ++ ['A'..'Z'] ++ ['0'..'9'] ++ "._-/"
 
+mode :: Parser Mode
+mode = string "mode" >> spaces >> char '=' >> spaces >> mode'
+    where mode' = string "normal" *> pure Normal
+              <|> string "trace"  *> pure Trace
+              <|> string "dry"    *> pure Dry
