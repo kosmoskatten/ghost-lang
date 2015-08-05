@@ -6,13 +6,15 @@ module GhostLang.Interpreter
 import GhostLang.Interpreter.InterpreterM
 import GhostLang.Interpreter.Intrinsic
 import GhostLang.Interpreter.InstructionSet
-import GhostLang.Types (Pattern)
 import GhostLang.RuntimeState ( RuntimeState (..)
                               , TVar
                               , Counter                                
                               , Mode
                               , NetworkConfiguration )
+import GhostLang.Types (Pattern)
 
+-- | Run a selected pattern with a set of counters, a network
+-- configuration and a runtime mode.
 runPattern' :: InstructionSet a 
             => Pattern a 
             -> [TVar Counter] 

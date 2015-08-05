@@ -14,6 +14,7 @@ import GhostLang.RuntimeState.Counter
 data NetworkConfiguration = NetworkConfiguration
 
 data Mode = Normal | Trace | Dry
+    deriving Show
 
 data RuntimeState =
     RuntimeState { counters             :: ![TVar Counter]

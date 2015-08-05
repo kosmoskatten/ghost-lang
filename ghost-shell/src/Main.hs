@@ -11,9 +11,15 @@ import Control.Monad.State.Strict ( StateT
                                   , get
                                   , modify' )
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Data.List (find)
 import Data.Maybe (fromJust, isJust)
 import qualified Data.Text as T
-import GhostLang (GhostProgram, compileAndLink, toPatternList)
+import GhostLang ( GhostProgram
+                 , compileAndLink
+                 , emptyNetworkConfiguration
+                 , toPatternList
+                 , runPattern
+                 )
 import Text.Printf (printf)
 
 type LoadedProgram = (FilePath, GhostProgram)
@@ -62,6 +68,21 @@ eval List = do
          forM_ (toPatternList $ snd (fromJust loadedProgram')) $ \(l, w, _) ->
              liftIO $ printf "%s : %ld\n" (T.unpack l) w
   else liftIO $ printf "No program loaded\n"
+
+  repl
+
+-- | Run the selected pattern.
+eval (Run pattern mode) = do
+  loadedProgram' <- loadedProgram <$> get
+  case loadedProgram' of
+    Just (_, prog) -> do
+        let plist    = toPatternList prog
+            maybePat = find (\(p, _, _) -> p == T.pack pattern) plist
+        case maybePat of
+          Just (_, _, pat) -> 
+              liftIO $ runPattern pat [] emptyNetworkConfiguration mode
+          Nothing  -> liftIO $ printf "Cannot find pattern '%s'\n" pattern
+    Nothing -> liftIO $ printf "No program loaded\n"
 
   repl
                              

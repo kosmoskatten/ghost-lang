@@ -1,10 +1,10 @@
 {-# LANGUAGE GADTs #-}
 module Command 
     ( Command (..)
-    , Mode (..)
     , parseCommand
     ) where
 
+import GhostLang (Mode (..))
 import Text.Parsec
 import Text.Parsec.String (Parser)
 
@@ -18,10 +18,6 @@ data Command where
     Quit :: Command
     EmptyLine :: Command
     Unknown :: !String -> Command
-    deriving Show
-
--- | Flag to tell which mode a pattern shall be executed in.
-data Mode = Normal | Trace | Dry
     deriving Show
 
 -- | Entry point for the parser.
