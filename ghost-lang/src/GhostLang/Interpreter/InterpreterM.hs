@@ -17,6 +17,10 @@ module GhostLang.Interpreter.InterpreterM
       -- TimeUnit evaluation:
     , evalTimeUnit
 
+    -- Runtime mode configuration:
+    , shallTrace
+    , shallExecute
+
     , ask
     , get
     , local
@@ -42,7 +46,8 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Text (Text)
 import GHC.Int (Int64)
 import GhostLang.Interpreter.Scope (Scope, emptyScope, lookup)
-import GhostLang.RuntimeState ( Counter (..) 
+import GhostLang.RuntimeState ( Counter (..)
+                              , Mode (..) 
                               , RuntimeState (..)
                               , emptyRuntimeState
                               , incInstrInvoked'
@@ -69,11 +74,11 @@ runInterpreter state interpreter =
   evalStateT (runReaderT (extractInterpreterM interpreter) emptyScope) state
 
 -- | Run an interpreterM action for testing purposes. Run with an
--- empty counter set.
-runInterpreterTest :: InterpreterM a -> IO a
-runInterpreterTest interpreter =
-    evalStateT (runReaderT (extractInterpreterM interpreter) 
-                           emptyScope) emptyRuntimeState
+-- empty counter set beside the setting of
+runInterpreterTest :: Mode -> InterpreterM a -> IO a
+runInterpreterTest mode' interpreter = do
+  let state = emptyRuntimeState { mode = mode' }
+  evalStateT (runReaderT (extractInterpreterM interpreter) emptyScope) state
 
 -- | Increase the counter for invoked instructions.
 incInstrInvoked :: InterpreterM ()
@@ -112,6 +117,18 @@ evalTimeUnit :: TimeUnit -> InterpreterM Int
 evalTimeUnit (USec v) = fromIntegral <$> evalValue v
 evalTimeUnit (MSec v) = (1000 *) . fromIntegral <$> evalValue v
 evalTimeUnit (Sec  v) = (1000000 *) . fromIntegral <$> evalValue v
+
+-- | Determine if evaluation shall trace.
+shallTrace :: InterpreterM Bool
+shallTrace = do
+  mode' <- mode <$> get
+  return $! mode' == Trace || mode' == Dry
+
+-- | Determine if evaluation shall execute real actions.
+shallExecute :: InterpreterM Bool
+shallExecute = do
+  mode' <- mode <$> get
+  return $! mode' == Normal || mode' == Trace
 
 updateCounter :: (Counter -> Counter) -> InterpreterM ()
 updateCounter g = do
