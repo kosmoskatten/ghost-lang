@@ -17,9 +17,11 @@ module GhostLang.Interpreter.InterpreterM
       -- TimeUnit evaluation:
     , evalTimeUnit
 
-    -- Runtime mode configuration:
-    , shallTrace
-    , shallExecute
+    -- Checked execution of an action:
+    , whenChecked
+
+    -- Trace a message:
+    , trace
 
     , ask
     , get
@@ -27,10 +29,12 @@ module GhostLang.Interpreter.InterpreterM
     , liftIO
     ) where
 
+import Control.Concurrent (myThreadId)
 import Control.Concurrent.STM ( STM
                               , atomically
                               , modifyTVar'
                               )
+import Control.Monad (when)
 import Control.Monad.Reader ( MonadReader
                             , ReaderT
                             , runReaderT
@@ -44,6 +48,7 @@ import Control.Monad.State ( MonadState
                            )
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Text (Text)
+import Data.Time (getCurrentTime)
 import GHC.Int (Int64)
 import GhostLang.Interpreter.Scope (Scope, emptyScope, lookup)
 import GhostLang.RuntimeState ( Counter (..)
@@ -58,6 +63,7 @@ import GhostLang.RuntimeState ( Counter (..)
                               )
 import GhostLang.Types (Value (..), TimeUnit (..))
 import Prelude hiding (lookup)
+import Text.Printf (printf)
 
 -- | Interpreter monad type for interpretation of instructions
 -- implementing the InstructionSet type class.
@@ -118,17 +124,22 @@ evalTimeUnit (USec v) = fromIntegral <$> evalValue v
 evalTimeUnit (MSec v) = (1000 *) . fromIntegral <$> evalValue v
 evalTimeUnit (Sec  v) = (1000000 *) . fromIntegral <$> evalValue v
 
--- | Determine if evaluation shall trace.
-shallTrace :: InterpreterM Bool
-shallTrace = do
+-- | Run the provided action iff the runtime state indicate execution.
+whenChecked :: InterpreterM () -> InterpreterM ()
+whenChecked act = do
   mode' <- mode <$> get
-  return $! mode' == Trace || mode' == Dry
+  when (mode' == Normal || mode' == Trace) act
 
--- | Determine if evaluation shall execute real actions.
-shallExecute :: InterpreterM Bool
-shallExecute = do
+-- | Trace a message.
+trace :: String -> InterpreterM ()
+trace msg = do
   mode' <- mode <$> get
-  return $! mode' == Normal || mode' == Trace
+  when (mode' == Trace) $ do
+      tid <- liftIO myThreadId
+      now <- liftIO getCurrentTime
+      liftIO $ printf "%s - %s: %s\n" (show tid) (show now) msg
+  when (mode' == Dry) $ do
+      liftIO $ putStrLn msg
 
 updateCounter :: (Counter -> Counter) -> InterpreterM ()
 updateCounter g = do

@@ -15,6 +15,7 @@ import GhostLang.Interpreter.InterpreterM ( InterpreterM
                                           , incConcCmds
                                           , incProcCalls
                                           , evalValue
+                                          , trace
                                           , ask
                                           , get
                                           , local
@@ -29,6 +30,9 @@ import GhostLang.Types ( Label
                        , Procedure (..)
                        )
 import Prelude hiding (lookup)
+import Text.Printf (printf)
+
+import qualified Data.Text as T
 
 -- | Instruction set type class.
 class InstructionSet a where
@@ -37,8 +41,10 @@ class InstructionSet a where
 -- | Execute a pattern within InterpreterM.
 execPattern :: InstructionSet a => Pattern a -> InterpreterM ()
 execPattern (Pattern _ name _ ops) = do
+  trace $ printf "Enter pattern '%s'" (T.unpack name)
   incPatternRuns name
   mapM_ exec ops
+  trace $ printf "Exit pattern '%s'" (T.unpack name)
 
 execOperation :: InstructionSet a => Operation a -> InterpreterM ()
 execOperation = exec
@@ -72,15 +78,18 @@ instance InstructionSet a => InstructionSet (Operation a) where
       let Procedure procName argNames ops = proc
           pairs = argNames `zip` argValues
 
+      trace $ printf "Enter proc '%s'" (T.unpack procName)
+
       -- Copy the values and name them correctly into a new
       -- scope. Some values may need to be copied from the current
       -- scope.
       scope <- fromList <$> mapM copyValue pairs
-
+                     
       incProcCalls procName
       
       -- Run the procedure inside its new scope.
       local (const scope) $ mapM_ exec ops
+      trace $ printf "Exit proc '%s'" (T.unpack procName)
           where
             copyValue :: (Label, Value) -> InterpreterM (Label, Value)
             copyValue (label, Stored label') = do

@@ -71,6 +71,7 @@ library
                      , parsec
                      , stm
                      , text
+                     , time
                      , transformers
   default-language:    Haskell2010
   ghc-options:         -Wall
