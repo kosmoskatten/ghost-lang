@@ -17,6 +17,7 @@ module GhostLang.LinkerTests
     -- Procedure resolving tests.
     , resolveLocalProc
     , resolveImportedProc
+    , resolveProcInProc
     , resolveInLoopProc
     , resolveInConcProc
     , resolveUnimportedProc
@@ -180,6 +181,35 @@ resolveImportedProc = do
   case resolve mods of
     Right mods' -> res @=? mods'
     Left _      -> assertBool "Shall accept" False
+
+-- | Resolve a procedure called from within a procedure.
+resolveProcInProc :: Assertion
+resolveProcInProc = do
+  let mods = [ GhostModule (moduleDecl ["Main"]) []
+               [ Pattern (initialPos "") "bar" 1
+                 [ Unresolved (initialPos "") "caller" [] ]
+               ]
+               [ Procedure "caller" []
+                 [ Unresolved (initialPos "") "foo" [] ]
+               , emptyProcedure
+               ]
+             ]
+      -- The resolved caller proc.
+      caller = Procedure "caller" [] [ Call emptyProcedure [] ]
+      -- The expected result.
+      res  = [ GhostModule (moduleDecl ["Main"]) []
+               [ Pattern (initialPos "") "bar" 1
+                 [ Call caller []
+                 ]
+               ]
+               [ caller, emptyProcedure 
+               ]
+             ]
+
+  case resolve mods of
+    Right mods' -> res @=? mods'
+    Left _      -> assertBool "Shall accept" False
+
                            
 -- | Resolve a module with a procedure reference inside a loop.
 resolveInLoopProc :: Assertion
@@ -193,7 +223,7 @@ resolveInLoopProc = do
                                      ]
                            ] [ emptyProcedure ]
              ]
-      -- The expect result.
+      -- The expected result.
       res  = [ GhostModule (moduleDecl ["Main"]) []
                            [ Pattern (initialPos "") "bar" 1
                                      [ Loop (Literal 1)
