@@ -6,6 +6,7 @@ module GhostLang.Compiler.Tokenizer
     , reserved
     , whiteSpace
     , withinBraces
+    , withinBrackets
     , withinParens
     ) where
 
@@ -56,6 +57,10 @@ whiteSpace = lexeme $ Token.whiteSpace tokenizer
 withinBraces :: Parser a -> Parser a
 withinBraces = lexeme . Token.braces tokenizer
 
+-- | Parse from within a pair of brackets.
+withinBrackets :: Parser a -> Parser a
+withinBrackets = lexeme . Token.brackets tokenizer
+
 -- | Parse from within a pair of parens.
 withinParens :: Parser a -> Parser a
 withinParens = lexeme . Token.parens tokenizer
@@ -78,8 +83,12 @@ tokenizer =
         , "with", "weight"
         , "loop", "concurrently"
         , "literal", "gaussian", "uniform"
+        , "bytes", "kbytes", "mbytes", "gbytes"
+        , "bps", "kbps", "mbps", "gbps"
         , "usec", "msec", "sec"
-        , "Delay"
+        , "GET", "POST", "PUT"
+        , "audio", "html", "image", "m2m", "script", "video"
+        , "Delay", "Http"
         ]
     , Token.caseSensitive = True
     }

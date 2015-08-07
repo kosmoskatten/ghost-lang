@@ -11,6 +11,8 @@ module GhostLang.Types
     , ModuleDecl (..)
     , ImportDecl (..)
     , TimeUnit (..)
+    , Payload (..)
+    , Pace (..)
     , Value (..)
     , Program (..)
     , Pattern (..)
@@ -63,6 +65,15 @@ newtype ImportDecl = ImportDecl [ModuleSegment]
 
 -- | A unit for describing size of time.
 data TimeUnit = USec Value | MSec Value | Sec Value
+    deriving (Eq, Generic, Show)
+
+-- | A unit for describing payload size.
+data Payload = Bytes Value | KiloBytes Value 
+             | MegaBytes Value | GigaBytes Value
+    deriving (Eq, Generic, Show)
+
+-- | A unit for describing network pace.
+data Pace = Bps Value | Kbps Value | Mbps Value | Gbps Value
     deriving (Eq, Generic, Show)
 
 -- | Representation of numeric values in ghost-lang.
