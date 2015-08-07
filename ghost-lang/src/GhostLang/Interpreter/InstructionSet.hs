@@ -62,13 +62,18 @@ instance InstructionSet a => InstructionSet (Operation a) where
     exec (Loop times ops) = do
       incLoopCmds
       times' <- fromIntegral <$> evalValue times
+      trace $ printf "Enter loop (iter=%d)" times'
+      
       replicateM_ times' $ mapM_ exec ops
+      trace $ printf "Exit loop"
 
     -- Invoke a concurrent command. Update counters accordingly.
     exec (Concurrently ops) = do
+      trace $ printf "Enter concurrent section"
       incConcCmds
       state <- get
       liftIO $ concurrently state ops
+      trace $ printf "Exit concurrent section"
 
     -- Invoke a procedure call. Update counters accordingly.
     exec (Call proc argValues) = do
