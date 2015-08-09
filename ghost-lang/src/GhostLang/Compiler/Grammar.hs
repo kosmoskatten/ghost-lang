@@ -5,6 +5,10 @@ module GhostLang.Compiler.Grammar
     , importDecl
     , valueRef
     , timeUnitRef
+    , payloadRef
+    , paceRef
+    , method
+    , content
     , intrinsicCommand
     , pattern
     , procedure
@@ -18,6 +22,10 @@ import GhostLang.Types ( Label
                        , ImportDecl (..)
                        , Value (..)
                        , TimeUnit (..)
+                       , Payload (..)
+                       , Pace (..)
+                       , Method (..)
+                       , Content (..)
                        , Pattern (..)
                        , Procedure (..)
                        , Operation (..)
@@ -29,6 +37,7 @@ import GhostLang.Compiler.Tokenizer ( comma
                                     , reserved
                                     , whiteSpace
                                     , withinBraces
+                                    , withinBrackets
                                     , withinParens )
 import Text.Parsec
 import Text.Parsec.String (Parser)
@@ -78,9 +87,50 @@ timeUnitRef = do
        <|> reserved "sec"  *> pure Sec
   return $ unit value
 
+-- | Parse a payload reference from the stream.
+payloadRef :: Parser Payload
+payloadRef = do
+  value <- valueRef
+  unit <- reserved "B"  *> pure B
+      <|> reserved "KB" *> pure KB
+      <|> reserved "MB" *> pure MB
+      <|> reserved "GB" *> pure GB
+  return $ unit value
+
+-- | Parse a pace reference from the stream.
+paceRef :: Parser Pace
+paceRef = do
+  value <- valueRef
+  unit <- reserved "bps"  *> pure Bps
+      <|> reserved "kbps" *> pure Kbps
+      <|> reserved "mbps" *> pure Mbps
+      <|> reserved "gbps" *> pure Gbps
+  return $ unit value
+
+-- | Parse a method from the stream.
+method :: Parser Method
+method = reserved "GET"  *> pure GET
+     <|> reserved "POST" *> pure POST
+     <|> reserved "PUT"  *> pure PUT
+
+-- | Parse a content type from the stream.
+content :: Parser Content
+content = reserved "audio"  *> pure Audio
+      <|> reserved "html"   *> pure Html
+      <|> reserved "image"  *> pure Image
+      <|> reserved "m2m"    *> pure M2M
+      <|> reserved "script" *> pure Script
+      <|> reserved "video"  *> pure Video
+
 -- | Parse an intrinsic command from the stream.
 intrinsicCommand :: Parser IntrinsicSet
-intrinsicCommand = Delay <$> (reserved "Delay" *> timeUnitRef)
+intrinsicCommand = delay <|> http
+    where
+      delay = Delay <$> (reserved "Delay" *> timeUnitRef)
+      http  = Http <$> (reserved "Http" *> method) 
+                   <*> contList 
+                   <*> payloadRef 
+                   <*> optionMaybe paceRef
 
 -- | Parse a pattern from the stream.
 pattern :: Parser (Pattern IntrinsicSet)
@@ -118,6 +168,9 @@ idList = packedIdentifier `sepBy` comma
 
 opsList :: Parser [Operation IntrinsicSet]
 opsList = operation `sepBy` comma
+
+contList :: Parser [Content]
+contList = withinBrackets $ content `sepBy` comma
 
 packedIdentifier :: Parser Label
 packedIdentifier = T.pack <$> identifier

@@ -11,17 +11,13 @@ import GhostLang.Interpreter.InterpreterM ( evalTimeUnit
                                           , trace
                                           , whenChecked
                                           , liftIO )
-import GhostLang.Types (TimeUnit, Pace, Payload)
+import GhostLang.Types ( TimeUnit
+                       , Pace
+                       , Payload
+                       , Method
+                       , Content
+                       )
 import Text.Printf (printf)
-
--- | Http method.
-data Method = GET | POST | PUT
-    deriving (Eq, Generic, Show)
-
--- | Content flags. High level descriptions for what become http
--- headers flags on both client and server sides.
-data Content = Audio | Html | Image | M2M | Script | Video
-    deriving (Eq, Generic, Show)
 
 -- | The data type of the intrinsic operations of ghost-lang.
 data IntrinsicSet where
@@ -40,5 +36,3 @@ instance InstructionSet IntrinsicSet where
       trace $ printf "Delay %d us" duration'
       whenChecked $ do
         liftIO $ threadDelay duration'
-      
-

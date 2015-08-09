@@ -39,6 +39,10 @@ import GhostLang.ParserProps ( ghostModuleDefP
                              , importDeclP
                              , valueRefP
                              , timeUnitRefP
+                             , payloadRefP
+                             , paceRefP
+                             , methodP
+                             , contentP
                              , intrinsicCommandP
                              , patternP
                              , procedureP
@@ -106,6 +110,10 @@ testSuite =
       , testProperty "ImportDeclaration" importDeclP
       , testProperty "ValueReference" valueRefP
       , testProperty "TimeUnitReference" timeUnitRefP
+      , testProperty "PayloadReference" payloadRefP
+      , testProperty "PaceRefP" paceRefP
+      , testProperty "Content" contentP
+      , testProperty "Method" methodP
       , testProperty "IntrinsicCommand" intrinsicCommandP
       , testProperty "Pattern" patternP
       , testProperty "Procedure" procedureP

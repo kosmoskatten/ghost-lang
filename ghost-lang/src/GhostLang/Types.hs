@@ -13,6 +13,8 @@ module GhostLang.Types
     , TimeUnit (..)
     , Payload (..)
     , Pace (..)
+    , Method (..)
+    , Content (..)
     , Value (..)
     , Program (..)
     , Pattern (..)
@@ -68,12 +70,20 @@ data TimeUnit = USec Value | MSec Value | Sec Value
     deriving (Eq, Generic, Show)
 
 -- | A unit for describing payload size.
-data Payload = Bytes Value | KiloBytes Value 
-             | MegaBytes Value | GigaBytes Value
+data Payload = B Value | KB Value | MB Value | GB Value
     deriving (Eq, Generic, Show)
 
 -- | A unit for describing network pace.
 data Pace = Bps Value | Kbps Value | Mbps Value | Gbps Value
+    deriving (Eq, Generic, Show)
+
+-- | Http method.
+data Method = GET | POST | PUT
+    deriving (Eq, Generic, Show)
+
+-- | Content flags. High level descriptions for what become http
+-- headers flags on both client and server sides.
+data Content = Audio | Html | Image | M2M | Script | Video
     deriving (Eq, Generic, Show)
 
 -- | Representation of numeric values in ghost-lang.

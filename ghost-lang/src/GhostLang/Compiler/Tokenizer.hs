@@ -83,7 +83,7 @@ tokenizer =
         , "with", "weight"
         , "loop", "concurrently"
         , "literal", "gaussian", "uniform"
-        , "bytes", "kbytes", "mbytes", "gbytes"
+        , "B", "KB", "MB", "GP"
         , "bps", "kbps", "mbps", "gbps"
         , "usec", "msec", "sec"
         , "GET", "POST", "PUT"

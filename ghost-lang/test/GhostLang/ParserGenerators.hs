@@ -5,7 +5,9 @@ module GhostLang.ParserGenerators where
 
 import Control.Monad (forM_)
 import Control.Monad.Writer (execWriter, tell)
+import Data.Char (toLower)
 import Data.List (intercalate)
+import Data.Maybe (fromJust, isJust)
 import GhostLang.CommonGenerators ()
 import GhostLang.Interpreter (IntrinsicSet (..))
 import GhostLang.Types ( Label
@@ -13,6 +15,10 @@ import GhostLang.Types ( Label
                        , ModuleDecl (..)
                        , ImportDecl (..)
                        , TimeUnit (..)
+                       , Payload (..)
+                       , Pace (..)
+                       , Method (..)
+                       , Content (..)
                        , Value (..)
                        , Pattern (..)
                        , Procedure (..)
@@ -60,8 +66,31 @@ instance Stringify TimeUnit where
     stringify (MSec v) = printf "%s msec" (stringify v)
     stringify (Sec v)  = printf "%s sec"  (stringify v)
 
+instance Stringify Payload where
+    stringify (B v)  = printf "%s B"  (stringify v)
+    stringify (KB v) = printf "%s KB" (stringify v)
+    stringify (MB v) = printf "%s MB" (stringify v)
+    stringify (GB v) = printf "%s GB" (stringify v)
+
+instance Stringify Pace where
+    stringify (Bps v)  = printf "%s bps"  (stringify v)
+    stringify (Kbps v) = printf "%s kbps" (stringify v)
+    stringify (Mbps v) = printf "%s mbps" (stringify v)
+    stringify (Gbps v) = printf "%s gbps" (stringify v)
+
+instance Stringify Method where
+    stringify m = show m
+
+instance Stringify Content where
+    stringify c = map toLower $ show c
+
 instance Stringify IntrinsicSet where
     stringify (Delay t) = printf "Delay %s" (stringify t)
+    stringify (Http m cs s p) =
+        let str = printf "Http %s [%s] %s" (stringify m) (toCommaStr cs)
+                                           (stringify s)
+        in if isJust p then str ++ printf " %s" (stringify $ fromJust p)
+           else str
 
 instance Stringify a => Stringify (Pattern a) where
     stringify (Pattern _ n w ops) =

@@ -8,6 +8,10 @@ import GhostLang.Types ( Label
                        , ModuleDecl (..)
                        , ImportDecl (..)
                        , TimeUnit (..)
+                       , Payload (..)
+                       , Pace (..)
+                       , Method (..)
+                       , Content (..)
                        , Value (..)
                        , Pattern (..)
                        , Procedure (..)
@@ -37,7 +41,13 @@ instance Arbitrary ImportDecl where
 
 -- | Arbitrary instance for IntrinsicSet.
 instance Arbitrary IntrinsicSet where
-    arbitrary = Delay <$> arbitrary
+    arbitrary = oneof [ delay ]
+        where
+          delay = Delay <$> arbitrary
+          http  = Http  <$> arbitrary 
+                        <*> listOf arbitrary
+                        <*> arbitrary
+                        <*> arbitrary
 
 -- | Arbitrary instance for TimeUnit.
 instance Arbitrary TimeUnit where
@@ -45,6 +55,30 @@ instance Arbitrary TimeUnit where
                       , MSec <$> arbitrary
                       , Sec  <$> arbitrary
                       ]
+
+-- | Arbitrary instance for Payload.
+instance Arbitrary Payload where
+    arbitrary = oneof [ B  <$> arbitrary
+                      , KB <$> arbitrary
+                      , MB <$> arbitrary
+                      , GB <$> arbitrary
+                      ]
+
+-- | Arbitrary instance for Pace.
+instance Arbitrary Pace where
+    arbitrary = oneof [ Bps  <$> arbitrary
+                      , Kbps <$> arbitrary
+                      , Mbps <$> arbitrary
+                      , Gbps <$> arbitrary
+                      ]
+
+-- | Arbitrary instance for Method.
+instance Arbitrary Method where
+    arbitrary = elements [ GET, POST, PUT ]
+
+-- | Arbitrary instance for Content.
+instance Arbitrary Content where
+    arbitrary = elements [ Audio, Html, Image, M2M, Script, Video ]
 
 -- | Arbitrary instance for Value.
 instance Arbitrary Value where

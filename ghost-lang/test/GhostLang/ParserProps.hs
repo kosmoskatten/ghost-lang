@@ -4,6 +4,10 @@ module GhostLang.ParserProps
     , importDeclP
     , valueRefP
     , timeUnitRefP
+    , payloadRefP
+    , paceRefP
+    , methodP
+    , contentP
     , intrinsicCommandP
     , patternP
     , procedureP
@@ -15,6 +19,10 @@ import GhostLang.Compiler.Grammar ( ghostModuleDef
                                   , importDecl
                                   , valueRef
                                   , timeUnitRef
+                                  , payloadRef
+                                  , paceRef
+                                  , method
+                                  , content
                                   , intrinsicCommand
                                   , pattern
                                   , procedure
@@ -26,6 +34,10 @@ import GhostLang.Types ( GhostModule
                        , ImportDecl
                        , Value
                        , TimeUnit
+                       , Payload
+                       , Pace
+                       , Method
+                       , Content
                        , Pattern
                        , Procedure
                        , Operation
@@ -54,6 +66,22 @@ valueRefP = prop valueRef
 -- | Property to test the timeUnitRef parser.
 timeUnitRefP :: TimeUnit -> Bool
 timeUnitRefP = prop timeUnitRef
+
+-- | Property to test the payloadRef parser.
+payloadRefP :: Payload -> Bool
+payloadRefP = prop payloadRef
+
+-- | Property to test the paceRef parser.
+paceRefP :: Pace -> Bool
+paceRefP = prop paceRef
+
+-- | Property to test the method parser.
+methodP :: Method -> Bool
+methodP = prop method
+
+-- | Property to test the content parser.
+contentP :: Content -> Bool
+contentP = prop content
 
 -- | Property to test the instrinsicCommand parser.
 intrinsicCommandP :: IntrinsicSet -> Bool
