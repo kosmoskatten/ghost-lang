@@ -8,13 +8,14 @@ import Control.Concurrent (threadDelay)
 import GHC.Generics (Generic)
 import GhostLang.Interpreter.InstructionSet (InstructionSet (..))
 import GhostLang.Interpreter.InterpreterM ( evalTimeUnit
+                                          , evalPayload
                                           , trace
                                           , whenChecked
                                           , liftIO )
 import GhostLang.Types ( TimeUnit
                        , Pace
                        , Payload
-                       , Method
+                       , Method (..)
                        , Content
                        )
 import Text.Printf (printf)
@@ -30,9 +31,21 @@ data IntrinsicSet where
 
 -- | Implementation of the InstructionSet type class.
 instance InstructionSet IntrinsicSet where
+
+    -- | Execute a delay command.
     exec (Delay duration) = do
       duration' <- evalTimeUnit duration
 
       trace $ printf "Delay %d us" duration'
       whenChecked $ do
         liftIO $ threadDelay duration'
+
+    -- | Execute a http GET command.
+    exec (Http GET _ payload _) = do
+      payload' <- evalPayload payload
+
+      trace $ printf "Http GET %ld" payload'
+
+    exec (Http POST _ _ _) = undefined
+
+    exec (Http PUT _ _ _) = undefined

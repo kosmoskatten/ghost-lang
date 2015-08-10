@@ -17,6 +17,9 @@ module GhostLang.Interpreter.InterpreterM
       -- TimeUnit evaluation:
     , evalTimeUnit
 
+    -- Payload evaluation:
+    , evalPayload
+
     -- Checked execution of an action:
     , whenChecked
 
@@ -61,7 +64,9 @@ import GhostLang.RuntimeState ( Counter (..)
                               , incPatternRuns'
                               , incProcCalls'
                               )
-import GhostLang.Types (Value (..), TimeUnit (..))
+import GhostLang.Types ( Value (..)
+                       , TimeUnit (..)
+                       , Payload (..) )
 import Prelude hiding (lookup)
 import Text.Printf (printf)
 
@@ -124,6 +129,13 @@ evalTimeUnit :: TimeUnit -> InterpreterM Int
 evalTimeUnit (USec v) = fromIntegral <$> evalValue v
 evalTimeUnit (MSec v) = (1000 *) . fromIntegral <$> evalValue v
 evalTimeUnit (Sec  v) = (1000000 *) . fromIntegral <$> evalValue v
+
+-- | Evaluate a payload value to the number of bytes.
+evalPayload :: Payload -> InterpreterM Int64
+evalPayload (B v)  = evalValue v
+evalPayload (KB v) = (1000 *) <$> evalValue v
+evalPayload (MB v) = (1000000 *) <$> evalValue v
+evalPayload (GB v) = (1000000000 *) <$> evalValue v
 
 -- | Run the provided action iff the runtime state indicate execution.
 whenChecked :: InterpreterM () -> InterpreterM ()
