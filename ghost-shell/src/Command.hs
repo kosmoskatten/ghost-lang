@@ -10,14 +10,15 @@ import Text.Parsec.String (Parser)
 
 -- | Simple data type to model the shell commands.
 data Command where
-    Load :: !FilePath -> Command
-    Status :: Command
-    List :: Command
-    Run :: !String -> !Mode -> Command
-    Help :: Command
-    Quit :: Command
-    EmptyLine :: Command
-    Unknown :: !String -> Command
+    LoadProgram   :: !FilePath -> Command
+    Status        :: Command
+    ListInfo      :: Command
+    SetHttpParams :: !String -> !Int -> Command
+    RunPattern    :: !String -> !Mode -> Command
+    Help          :: Command
+    Quit          :: Command
+    EmptyLine     :: Command
+    Unknown       :: !String -> Command
     deriving Show
 
 -- | Entry point for the parser.
@@ -28,35 +29,45 @@ parseCommand str =
       Left err -> Unknown $ show err
 
 aCommand :: Parser Command
-aCommand = spaces *> ( try load
+aCommand = spaces *> ( try loadProgram
                    <|> try status
-                   <|> try list
-                   <|> try run
+                   <|> try listInfo
+                   <|> try setHttpParams
+                   <|> try runPattern
                    <|> try help 
                    <|> try quit 
                    <|> emptyLine )
 
-load :: Parser Command
-load = do
+loadProgram :: Parser Command
+loadProgram = do
   string "load-program" >> spaces
   path' <- path
   spaces >> eof
-  return $ Load path'
+  return $ LoadProgram path'
 
 status :: Parser Command
 status = string "status" >> spaces >> eof >> pure Status
 
-list :: Parser Command
-list = string "list-patterns" >> spaces >> eof >> pure List
+listInfo :: Parser Command
+listInfo = string "list-info" >> spaces >> eof >> pure ListInfo
 
-run :: Parser Command
-run = do
+setHttpParams :: Parser Command
+setHttpParams = do
+  string "set-http-params" >> spaces
+  service' <- service
+  spaces
+  port'    <- port
+  spaces >> eof
+  return $ SetHttpParams service' port'
+
+runPattern :: Parser Command
+runPattern = do
   string "run-pattern" >> spaces
   pattern' <- pattern
   spaces
   mode' <- mode
   spaces >> eof
-  return $ Run pattern' mode'
+  return $ RunPattern pattern' mode'
 
 help :: Parser Command
 help = string "help" >> spaces >> eof >> pure Help
@@ -75,6 +86,15 @@ path :: Parser FilePath
 path = (:) <$> char '/' <*> many1 (oneOf pathChar)
     where pathChar = ['a'..'z'] ++ ['A'..'Z'] ++ ['0'..'9'] ++ "._-/"
 
+service :: Parser String
+service = (:) <$> oneOf startChar <*> many (oneOf followChar)
+    where
+      startChar  = ['a'..'z'] ++ ['A'..'Z'] ++ ['0'..'9']
+      followChar = startChar ++ ".-:/"
+
+port :: Parser Int
+port = read <$> many1 digit
+  
 mode :: Parser Mode
 mode = string "mode" >> spaces >> char '=' >> spaces >> mode'
     where mode' = string "normal" *> pure Normal

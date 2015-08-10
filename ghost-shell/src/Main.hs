@@ -15,6 +15,7 @@ import Data.List (find)
 import Data.Maybe (fromJust, isJust)
 import qualified Data.Text as T
 import GhostLang ( GhostProgram
+                 , NetworkConfiguration (..)
                  , compileAndLink
                  , emptyNetworkConfiguration
                  , toPatternList
@@ -24,7 +25,8 @@ import Text.Printf (printf)
 
 type LoadedProgram = (FilePath, GhostProgram)
 
-data State = State { loadedProgram :: !(Maybe LoadedProgram) }
+data State = State { loadedProgram        :: !(Maybe LoadedProgram) 
+                   , networkConfiguration :: !NetworkConfiguration }
 
 -- | Monad stack for the ghost-shell.
 newtype Shell a = Shell { extrShell :: StateT State IO a }
@@ -42,7 +44,7 @@ repl = do
 -- | Evaluate a command.
 eval :: Command -> Shell ()
 
-eval (Load path) = do
+eval (LoadProgram path) = do
   maybeProgram <- liftIO $ compileAndLink path
   case maybeProgram of
     Right prog  -> do 
@@ -60,19 +62,35 @@ eval Status = do
 
   repl
 
--- | List the patterns for the loaded program.
-eval List = do
+-- | List information from the current state.
+eval ListInfo = do
+  networkConfiguration' <- networkConfiguration <$> get
+  liftIO $ printf "Http service address: %s\n" 
+                  (httpServiceAddress networkConfiguration')
+  liftIO $ printf "Http service port: %d\n" 
+                  (httpServicePort networkConfiguration')
+
   loadedProgram' <- loadedProgram <$> get
   if isJust loadedProgram' then 
       do liftIO $ printf "Pattern : Weight\n"
          forM_ (toPatternList $ snd (fromJust loadedProgram')) $ \(l, w, _) ->
              liftIO $ printf "%s : %ld\n" (T.unpack l) w
   else liftIO $ printf "No program loaded\n"
-
+  
   repl
 
+-- | Set http parameters in the state.
+eval (SetHttpParams service port) = do
+    modify' $ \s -> 
+        s { networkConfiguration = 
+                NetworkConfiguration { httpServiceAddress = service
+                                     , httpServicePort    = port }
+          }
+
+    repl
+
 -- | Run the selected pattern.
-eval (Run pattern mode) = do
+eval (RunPattern pattern mode) = do
   loadedProgram' <- loadedProgram <$> get
   case loadedProgram' of
     Just (_, prog) -> do
@@ -108,7 +126,8 @@ runShell :: Shell a -> IO a
 runShell act = evalStateT (extrShell act) emptyState
 
 emptyState :: State
-emptyState = State { loadedProgram = Nothing }
+emptyState = State { loadedProgram        = Nothing
+                   , networkConfiguration = emptyNetworkConfiguration }
 
 setLoadedProgram :: LoadedProgram -> Shell ()
 setLoadedProgram p = modify' $ \s -> s { loadedProgram = Just p }

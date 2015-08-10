@@ -54,7 +54,7 @@ import GhostLang.Interpreter.Scope (Scope, emptyScope, lookup)
 import GhostLang.RuntimeState ( Counter (..)
                               , Mode (..) 
                               , RuntimeState (..)
-                              , emptyRuntimeState
+                              , defaultRuntimeState
                               , incInstrInvoked'
                               , incLoopCmds'
                               , incConcCmds'
@@ -83,8 +83,9 @@ runInterpreter state interpreter =
 -- empty counter set beside the setting of
 runInterpreterTest :: Mode -> InterpreterM a -> IO a
 runInterpreterTest mode' interpreter = do
-  let state = emptyRuntimeState { mode = mode' }
-  evalStateT (runReaderT (extractInterpreterM interpreter) emptyScope) state
+  state <- defaultRuntimeState
+  let state' = state { mode = mode' }
+  evalStateT (runReaderT (extractInterpreterM interpreter) emptyScope) state'
 
 -- | Increase the counter for invoked instructions.
 incInstrInvoked :: InterpreterM ()

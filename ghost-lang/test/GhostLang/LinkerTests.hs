@@ -33,8 +33,7 @@ import GhostLang.Compiler.Linker ( ProcDef
                                  , findProcDefs
                                  )
 import GhostLang.Interpreter (IntrinsicSet)
-import GhostLang.Types ( Label
-                       , ModuleSegment
+import GhostLang.Types ( ModuleSegment
                        , Value (..)
                        , GhostModule (..)
                        , ImportDecl (..)

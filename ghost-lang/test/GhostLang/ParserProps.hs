@@ -42,8 +42,7 @@ import GhostLang.Types ( GhostModule
                        , Procedure
                        , Operation
                        )
-import GhostLang.CommonGenerators
-import GhostLang.ParserGenerators
+import GhostLang.Stringify (Stringify (..))
 import Text.Parsec (parse)
 import Text.Parsec.String (Parser)
 

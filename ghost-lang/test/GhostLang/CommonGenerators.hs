@@ -41,7 +41,7 @@ instance Arbitrary ImportDecl where
 
 -- | Arbitrary instance for IntrinsicSet.
 instance Arbitrary IntrinsicSet where
-    arbitrary = oneof [ delay ]
+    arbitrary = oneof [ delay, http ]
         where
           delay = Delay <$> arbitrary
           http  = Http  <$> arbitrary 

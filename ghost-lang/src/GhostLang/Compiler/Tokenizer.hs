@@ -82,13 +82,6 @@ tokenizer =
         , "pattern", "procedure"
         , "with", "weight"
         , "loop", "concurrently"
-        , "literal", "gaussian", "uniform"
-        , "B", "KB", "MB", "GP"
-        , "bps", "kbps", "mbps", "gbps"
-        , "usec", "msec", "sec"
-        , "GET", "POST", "PUT"
-        , "audio", "html", "image", "m2m", "script", "video"
-        , "Delay", "Http"
         ]
     , Token.caseSensitive = True
     }

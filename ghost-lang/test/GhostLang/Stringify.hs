@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module GhostLang.ParserGenerators where
+module GhostLang.Stringify where
 
 import Control.Monad (forM_)
 import Control.Monad.Writer (execWriter, tell)
@@ -24,7 +24,6 @@ import GhostLang.Types ( Label
                        , Procedure (..)
                        , Operation (..)
                        )
-import Test.QuickCheck
 import Text.Printf (printf)
 import qualified Data.Text as T
 
