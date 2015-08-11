@@ -8,10 +8,10 @@ import Control.Concurrent (threadDelay)
 import GHC.Generics (Generic)
 import GhostLang.Interpreter.InstructionSet (InstructionSet (..))
 import GhostLang.Interpreter.InterpreterM ( evalTimeUnit
-                                          , evalPayload
                                           , trace
                                           , whenChecked
                                           , liftIO )
+import GhostLang.Interpreter.WebClient (httpGet, mkGetUrl)
 import GhostLang.Types ( TimeUnit
                        , Pace
                        , Payload
@@ -42,9 +42,11 @@ instance InstructionSet IntrinsicSet where
 
     -- | Execute a http GET command.
     exec (Http GET _ payload _) = do
-      payload' <- evalPayload payload
+      url <- mkGetUrl payload
 
-      trace $ printf "Http GET %ld" payload'
+      trace $ printf "Http GET %s" url
+--      whenChecked $ do
+--        httpGet payload'
 
     exec (Http POST _ _ _) = undefined
 

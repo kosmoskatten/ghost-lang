@@ -21,6 +21,7 @@ import GhostLang ( GhostProgram
                  , toPatternList
                  , runPattern
                  )
+import System.IO (hFlush, stdout)
 import Text.Printf (printf)
 
 type LoadedProgram = (FilePath, GhostProgram)
@@ -38,7 +39,7 @@ main = runShell repl
 -- | Entry point for the read-eval-print-loop.
 repl :: Shell ()
 repl = do
-  liftIO $ putStr "> "
+  liftIO $ putStr "> " >> hFlush stdout
   eval =<< parseCommand <$> liftIO getLine
 
 -- | Evaluate a command.
@@ -97,8 +98,9 @@ eval (RunPattern pattern mode) = do
         let plist    = toPatternList prog
             maybePat = find (\(p, _, _) -> p == T.pack pattern) plist
         case maybePat of
-          Just (_, _, pat) -> 
-              liftIO $ runPattern pat [] emptyNetworkConfiguration mode
+          Just (_, _, pat) -> do
+              nc <- networkConfiguration <$> get
+              liftIO $ runPattern pat [] nc mode
           Nothing  -> liftIO $ printf "Cannot find pattern '%s'\n" pattern
     Nothing -> liftIO $ printf "No program loaded\n"
 
