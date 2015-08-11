@@ -1,26 +1,32 @@
 module GhostLang.Interpreter.WebClient
     ( httpGet
-    , mkGetUrl
+    , eagerConsumer
     ) where
 
-import GHC.Int (Int64)
-import GhostLang.Interpreter.InterpreterM ( InterpreterM
-                                          , evalPayload
-                                          , get
-                                          )
-import GhostLang.RuntimeState ( RuntimeState (..)
-                              , NetworkConfiguration (..)
-                              )
-import GhostLang.Types (Payload)
+import Data.ByteString (ByteString)
 import Network.HTTP.Client
-import Text.Printf (printf)
+import Network.HTTP.Types
+import qualified Data.ByteString as BS
 
-httpGet :: Int64 -> InterpreterM ()
-httpGet = undefined
+-- | Fetch a web resource using the provided consumer.
+httpGet :: Manager -> String -> (Response BodyReader -> IO Status) -> IO Status
+httpGet mgr url consumer = do
+  req <- parseUrl url
+  withResponse req mgr consumer
 
-mkGetUrl :: Payload -> InterpreterM String
-mkGetUrl payload = do
-  size <- evalPayload payload
-  nc   <- networkConfiguration <$> get
-  return $! printf "%s:%d/download?size=%ld" (httpServiceAddress nc)
-                                             (httpServicePort nc) size
+-- | The eager consumer. Consume as fast as possible from the network.
+eagerConsumer :: Response BodyReader -> IO Status
+eagerConsumer resp = do
+  let status = responseStatus resp
+      body   = responseBody resp
+
+  consumeIt body =<< brRead body
+  return status
+    where
+      consumeIt :: BodyReader -> ByteString -> IO ()
+      consumeIt body bs
+          | BS.null bs   = return ()
+          | otherwise = do
+                       bs' <- brRead body
+                       putStrLn "Got chunk"
+                       consumeIt body bs'

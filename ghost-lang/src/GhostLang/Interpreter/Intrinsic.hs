@@ -5,13 +5,20 @@ module GhostLang.Interpreter.Intrinsic
     ) where
 
 import Control.Concurrent (threadDelay)
+import Control.Monad (void)
 import GHC.Generics (Generic)
 import GhostLang.Interpreter.InstructionSet (InstructionSet (..))
-import GhostLang.Interpreter.InterpreterM ( evalTimeUnit
+import GhostLang.Interpreter.InterpreterM ( InterpreterM
+                                          , get
+                                          , evalTimeUnit
+                                          , evalPayload
                                           , trace
                                           , whenChecked
                                           , liftIO )
-import GhostLang.Interpreter.WebClient (httpGet, mkGetUrl)
+import GhostLang.Interpreter.WebClient (httpGet, eagerConsumer)
+import GhostLang.RuntimeState ( RuntimeState (..)
+                              , NetworkConfiguration (..)
+                              )
 import GhostLang.Types ( TimeUnit
                        , Pace
                        , Payload
@@ -45,9 +52,18 @@ instance InstructionSet IntrinsicSet where
       url <- mkGetUrl payload
 
       trace $ printf "Http GET %s" url
---      whenChecked $ do
---        httpGet payload'
+      whenChecked $ do
+        mgr <- connectionMgr <$> get
+        void $ liftIO $ httpGet mgr url eagerConsumer
 
     exec (Http POST _ _ _) = undefined
 
     exec (Http PUT _ _ _) = undefined
+
+mkGetUrl :: Payload -> InterpreterM String
+mkGetUrl payload = do
+--  size <- evalPayload payload
+  nc   <- networkConfiguration <$> get
+--  return $! printf "%s:%d/download?size=%ld" (httpServiceAddress nc)
+--                                             (httpServicePort nc) size
+  return $ printf "%s:%d" (httpServiceAddress nc) (httpServicePort nc)
