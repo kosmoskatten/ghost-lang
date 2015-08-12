@@ -1,8 +1,11 @@
 module GhostLang.Interpreter.WebClient
     ( httpGet
     , eagerConsumer
+    , pacedConsumer
+    , initVirtualBuffer
     ) where
 
+import Control.Concurrent (threadDelay)
 import Data.ByteString (ByteString)
 import Data.Time ( NominalDiffTime
                  , UTCTime
@@ -14,6 +17,11 @@ import Network.HTTP.Client
 import Network.HTTP.Types
 import qualified Data.ByteString as BS
 
+import Text.Printf (printf)
+
+-- | A virtual buffer is a tool for simulation of application level
+-- buffering. The buffer will approximate a pace, and that pace will
+-- cause back pressure on the network if necessary.
 data VirtualBuffer =
     VirtualBuffer { totalRec    :: !Int
                   , bufferPace  :: !Int64
@@ -38,16 +46,34 @@ eagerConsumer resp = do
     where
       consumeIt :: BodyReader -> ByteString -> IO ()
       consumeIt body bs
-          | BS.null bs   = return ()
-          | otherwise = do
+          | BS.null bs = return ()
+          | otherwise  = do
                        bs' <- brRead body
                        putStrLn "Got chunk"
                        consumeIt body bs'
 
-{-pacedConsumer :: VirtualBuffer-> Response BodyReader -> IO Status
+-- | The paced consumer. Is using the buffer for paceing.
+pacedConsumer :: VirtualBuffer -> Response BodyReader -> IO Status
 pacedConsumer buffer resp = do
   let status = responseStatus resp
-      body   = responseBody resp-}
+      body   = responseBody resp
+
+  consumeIt buffer body
+  return status
+      where
+        consumeIt :: VirtualBuffer -> BodyReader -> IO ()
+        consumeIt buf body = do
+            full <- isFull buf
+            if full then 
+                do threadDelay 100000
+                   consumeIt buf body
+            else do
+              bs <- brRead body
+              if not (BS.null bs) then
+                  do let buf' = addData (BS.length bs) buf
+                     printf "Added chunk: %d\n" (BS.length bs)
+                     consumeIt buf' body
+              else return ()
 
 -- | Initialize the virtual buffer the pace, expressed as the number
 -- of bytes that are allowed to pass per second (statistically).
@@ -67,7 +93,7 @@ isFull buffer = do
   now <- getCurrentTime
   let duration = now `diffUTCTime` bufferStart buffer
       tp       = totalRec buffer `throughput` duration
-  putStrLn $ show tp
+  printf "Current average throughput %ld - set pace: %ld\n" tp (bufferPace buffer)
   return $ tp > bufferPace buffer
 
 throughput :: Int -> NominalDiffTime-> Int64

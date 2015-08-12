@@ -17,8 +17,9 @@ module GhostLang.Interpreter.InterpreterM
       -- TimeUnit evaluation:
     , evalTimeUnit
 
-    -- Payload evaluation:
+    -- Payload and Pace evaluation:
     , evalPayload
+    , evalPace
 
     -- Checked execution of an action:
     , whenChecked
@@ -66,7 +67,8 @@ import GhostLang.RuntimeState ( Counter (..)
                               )
 import GhostLang.Types ( Value (..)
                        , TimeUnit (..)
-                       , Payload (..) )
+                       , Payload (..)
+                       , Pace (..) )
 import Prelude hiding (lookup)
 import Text.Printf (printf)
 
@@ -126,16 +128,26 @@ evalValue _ = error "Not yet implemented"
 -- | Evaluate a TimeUnit. The result is a value suitable for feeding
 -- threadDelay.
 evalTimeUnit :: TimeUnit -> InterpreterM Int
-evalTimeUnit (USec v) = fromIntegral <$> evalValue v
-evalTimeUnit (MSec v) = (1000 *) . fromIntegral <$> evalValue v
+evalTimeUnit (USec v) = fromIntegral               <$> evalValue v
+evalTimeUnit (MSec v) = (1000 *) . fromIntegral    <$> evalValue v
 evalTimeUnit (Sec  v) = (1000000 *) . fromIntegral <$> evalValue v
 
 -- | Evaluate a payload value to the number of bytes.
 evalPayload :: Payload -> InterpreterM Int64
 evalPayload (B v)  = evalValue v
-evalPayload (KB v) = (1000 *) <$> evalValue v
-evalPayload (MB v) = (1000000 *) <$> evalValue v
+evalPayload (KB v) = (1000 *)       <$> evalValue v
+evalPayload (MB v) = (1000000 *)    <$> evalValue v
 evalPayload (GB v) = (1000000000 *) <$> evalValue v
+
+-- | Evaluate a pace value to a corresponding byte value.
+evalPace :: Pace -> InterpreterM Int64
+evalPace (Bps v)  = bitsToBytes                  <$> evalValue v
+evalPace (Kbps v) = bitsToBytes . (1000 *)       <$> evalValue v
+evalPace (Mbps v) = bitsToBytes . (1000000 *)    <$> evalValue v
+evalPace (Gbps v) = bitsToBytes . (1000000000 *) <$> evalValue v
+
+bitsToBytes :: Int64 -> Int64
+bitsToBytes n = n `div` 8
 
 -- | Run the provided action iff the runtime state indicate execution.
 whenChecked :: InterpreterM () -> InterpreterM ()

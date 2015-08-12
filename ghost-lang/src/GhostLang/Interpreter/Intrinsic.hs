@@ -12,10 +12,15 @@ import GhostLang.Interpreter.InterpreterM ( InterpreterM
                                           , get
                                           , evalTimeUnit
                                           , evalPayload
+                                          , evalPace
                                           , trace
                                           , whenChecked
                                           , liftIO )
-import GhostLang.Interpreter.WebClient (httpGet, eagerConsumer)
+import GhostLang.Interpreter.WebClient ( httpGet
+                                       , eagerConsumer
+                                       , pacedConsumer
+                                       , initVirtualBuffer
+                                       )
 import GhostLang.RuntimeState ( RuntimeState (..)
                               , NetworkConfiguration (..)
                               )
@@ -47,14 +52,25 @@ instance InstructionSet IntrinsicSet where
       whenChecked $ do
         liftIO $ threadDelay duration'
 
-    -- | Execute a http GET command.
-    exec (Http GET _ payload _) = do
+    -- | Execute a http GET command. No paceing.
+    exec (Http GET _ payload Nothing) = do
       url <- mkGetUrl payload
 
       trace $ printf "Http GET %s" url
       whenChecked $ do
         mgr <- connectionMgr <$> get
         void $ liftIO $ httpGet mgr url eagerConsumer
+
+    -- | Execute a http GET command with paceing.
+    exec (Http GET _ payload (Just pace)) = do
+      url <- mkGetUrl payload
+      pace' <- evalPace pace
+
+      trace $ printf "Http GET %s, pace %ld bytes per sec" url pace'
+      whenChecked $ do
+        mgr    <- connectionMgr <$> get
+        buffer <- liftIO $ initVirtualBuffer pace'
+        void $ liftIO $ httpGet mgr url (pacedConsumer buffer)
 
     exec (Http POST _ _ _) = undefined
 
