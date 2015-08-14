@@ -24,16 +24,23 @@ router chunk request respond = respond $
       
       _ -> notFound
 
-app :: Application
-app _ respond = do
-  putStrLn "Hepp"
-  respond $ responseLBS status200 [("Content-Type", "text/plain")] "Hello web!"
-
 download :: ByteString -> Request -> Response
-download chunk _ = 
-    responseStream status200 
-                   [("Content-Type", "text/plain")] $
-                   generator 1000 chunk
+download chunk request =
+    case requestedSize request of
+      Just amount ->
+          responseStream status200 
+                         [("Content-Type", "text/plain")] $
+                         generator amount chunk
+      Nothing     ->
+          responseLBS status400
+                      [("Content-Type", "text/plain")]
+                      "Missing or malformed size parameter"
+    where
+      requestedSize :: Request -> Maybe Int
+      requestedSize req = do
+        val  <- lookup "size" $ queryString req
+        val' <- BS.unpack <$> val -- Also evaluating second level of Maybe
+        maybeInt val'
 
 methodNotAllowed :: Response
 methodNotAllowed = 
@@ -65,6 +72,11 @@ genPayload :: IO ByteString
 genPayload = BS.pack <$> (replicateM chunkSize $ randomRIO (' ', '~'))
 
 chunkSize :: Int
-chunkSize = 256
+chunkSize = 32768
 
+maybeInt :: String -> Maybe Int
+maybeInt str =
+    case reads str of
+      [(value, "")] -> Just value
+      _             -> Nothing
 

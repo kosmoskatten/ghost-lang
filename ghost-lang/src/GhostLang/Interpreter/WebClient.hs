@@ -13,11 +13,14 @@ import Data.Time ( NominalDiffTime
                  , getCurrentTime
                  )
 import GHC.Int (Int64)
+import GhostLang.RuntimeState (HttpStatus (..))
 import Network.HTTP.Client
 import Network.HTTP.Types
 import qualified Data.ByteString as BS
 
 import Text.Printf (printf)
+
+type RetVal = (HttpStatus, Int64)
 
 -- | A virtual buffer is a tool for simulation of application level
 -- buffering. The buffer will approximate a pace, and that pace will
@@ -30,38 +33,38 @@ data VirtualBuffer =
     deriving Show
 
 -- | Fetch a web resource using the provided consumer.
-httpGet :: Manager -> String -> (Response BodyReader -> IO Status) -> IO Status
+httpGet :: Manager -> String -> (Response BodyReader -> IO RetVal) -> IO RetVal
 httpGet mgr url consumer = do
   req <- parseUrl url
   withResponse req mgr consumer
 
 -- | The eager consumer. Consume as fast as possible from the network.
-eagerConsumer :: Response BodyReader -> IO Status
+eagerConsumer :: Response BodyReader -> IO RetVal
 eagerConsumer resp = do
   let status = responseStatus resp
       body   = responseBody resp
 
-  consumeIt body =<< brRead body
-  return status
+  bs  <- brRead body
+  len <- consumeIt (BS.length bs) body bs
+  return (fromStatus status, fromIntegral len)
     where
-      consumeIt :: BodyReader -> ByteString -> IO ()
-      consumeIt body bs
-          | BS.null bs = return ()
+      consumeIt :: Int -> BodyReader -> ByteString -> IO Int
+      consumeIt acc body bs
+          | BS.null bs = return acc
           | otherwise  = do
-                       bs' <- brRead body
-                       putStrLn "Got chunk"
-                       consumeIt body bs'
+              bs' <- brRead body
+              consumeIt (acc + BS.length bs') body bs'
 
 -- | The paced consumer. Is using the buffer for paceing.
-pacedConsumer :: VirtualBuffer -> Response BodyReader -> IO Status
+pacedConsumer :: VirtualBuffer -> Response BodyReader -> IO RetVal
 pacedConsumer buffer resp = do
   let status = responseStatus resp
       body   = responseBody resp
 
-  consumeIt buffer body
-  return status
+  len <- consumeIt buffer body
+  return (fromStatus status, fromIntegral len)
       where
-        consumeIt :: VirtualBuffer -> BodyReader -> IO ()
+        consumeIt :: VirtualBuffer -> BodyReader -> IO Int
         consumeIt buf body = do
             full <- isFull buf
             if full then 
@@ -71,9 +74,8 @@ pacedConsumer buffer resp = do
               bs <- brRead body
               if not (BS.null bs) then
                   do let buf' = addData (BS.length bs) buf
-                     printf "Added chunk: %d\n" (BS.length bs)
                      consumeIt buf' body
-              else return ()
+              else return $ totalRec buf
 
 -- | Initialize the virtual buffer the pace, expressed as the number
 -- of bytes that are allowed to pass per second (statistically).
@@ -93,8 +95,7 @@ isFull buffer = do
   now <- getCurrentTime
   let duration = now `diffUTCTime` bufferStart buffer
       tp       = totalRec buffer `throughput` duration
-  printf "Current average throughput %ld - set pace: %ld\n" tp (bufferPace buffer)
-  return $ tp > bufferPace buffer
+  return $! tp > bufferPace buffer
 
 throughput :: Int -> NominalDiffTime-> Int64
 throughput amount duration =
@@ -102,3 +103,7 @@ throughput amount duration =
         rate      = fromIntegral amount / duration'
     in round rate
   
+fromStatus :: Status -> HttpStatus
+fromStatus status
+    | status == status200 = Success
+    | otherwise           = Failure

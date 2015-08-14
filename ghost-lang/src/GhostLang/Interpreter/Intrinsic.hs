@@ -15,6 +15,8 @@ import GhostLang.Interpreter.InterpreterM ( InterpreterM
                                           , evalPace
                                           , trace
                                           , whenChecked
+                                          , updHttpGETCounters
+                                          , timedAction
                                           , liftIO )
 import GhostLang.Interpreter.WebClient ( httpGet
                                        , eagerConsumer
@@ -58,8 +60,10 @@ instance InstructionSet IntrinsicSet where
 
       trace $ printf "Http GET %s" url
       whenChecked $ do
-        mgr <- connectionMgr <$> get
-        void $ liftIO $ httpGet mgr url eagerConsumer
+        ((status, bytes), d) <- timedAction $ do
+            mgr <- connectionMgr <$> get
+            liftIO $ httpGet mgr url eagerConsumer
+        updHttpGETCounters d bytes status
 
     -- | Execute a http GET command with paceing.
     exec (Http GET _ payload (Just pace)) = do
@@ -68,9 +72,11 @@ instance InstructionSet IntrinsicSet where
 
       trace $ printf "Http GET %s, pace %ld bytes per sec" url pace'
       whenChecked $ do
-        mgr    <- connectionMgr <$> get
-        buffer <- liftIO $ initVirtualBuffer pace'
-        void $ liftIO $ httpGet mgr url (pacedConsumer buffer)
+        ((status, bytes), d) <- timedAction $ do
+            mgr    <- connectionMgr <$> get
+            buffer <- liftIO $ initVirtualBuffer pace'
+            liftIO $ httpGet mgr url (pacedConsumer buffer)
+        updHttpGETCounters d bytes status
 
     exec (Http POST _ _ _) = undefined
 
@@ -78,8 +84,7 @@ instance InstructionSet IntrinsicSet where
 
 mkGetUrl :: Payload -> InterpreterM String
 mkGetUrl payload = do
---  size <- evalPayload payload
+  size <- evalPayload payload
   nc   <- networkConfiguration <$> get
---  return $! printf "%s:%d/download?size=%ld" (httpServiceAddress nc)
---                                             (httpServicePort nc) size
-  return $ printf "%s:%d" (httpServiceAddress nc) (httpServicePort nc)
+  return $! printf "%s:%d/download?size=%ld" (httpServiceAddress nc)
+                                             (httpServicePort nc) size
