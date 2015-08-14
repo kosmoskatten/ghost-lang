@@ -8,6 +8,7 @@ module GhostLang
     , Mode (..)
     , NetworkConfiguration (..)
     , compileAndLink
+    , emptyCounter
     , emptyNetworkConfiguration
     , toPatternList
     , runPattern
@@ -24,6 +25,7 @@ import GhostLang.RuntimeState ( TVar
                               , Counter (..)
                               , Mode (..)
                               , NetworkConfiguration (..)
+                              , emptyCounter
                               , emptyNetworkConfiguration )
 
 -- | Convenience type aliases for external usage.

@@ -5,11 +5,16 @@ module GhostLang.Interpreter.InterpreterM
     , runInterpreterTest
 
       -- API towards ghost-lang interpretation. Counters:
+    , incPatternExecTime
     , incInstrInvoked
     , incLoopCmds
     , incConcCmds
     , incPatternRuns
     , incProcCalls
+    , updHttpGETCounters
+
+    -- Measure the time of an action:
+    , timedAction
 
       -- Value evaluation:
     , evalValue
@@ -52,18 +57,23 @@ import Control.Monad.State ( MonadState
                            )
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Text (Text)
-import Data.Time (getCurrentTime)
+import Data.Time ( NominalDiffTime
+                 , diffUTCTime
+                 , getCurrentTime )
 import GHC.Int (Int64)
 import GhostLang.Interpreter.Scope (Scope, emptyScope, lookup)
 import GhostLang.RuntimeState ( Counter (..)
+                              , HttpStatus
                               , Mode (..) 
                               , RuntimeState (..)
                               , defaultRuntimeState
+                              , incPatternExecTime'
                               , incInstrInvoked'
                               , incLoopCmds'
                               , incConcCmds'
                               , incPatternRuns'
                               , incProcCalls'
+                              , updHttpGETCounters'
                               )
 import GhostLang.Types ( Value (..)
                        , TimeUnit (..)
@@ -94,6 +104,10 @@ runInterpreterTest mode' interpreter = do
   let state' = state { mode = mode' }
   evalStateT (runReaderT (extractInterpreterM interpreter) emptyScope) state'
 
+-- | Increase the counter for pattern execution time.
+incPatternExecTime :: NominalDiffTime -> InterpreterM ()
+incPatternExecTime d = updateCounter $ incPatternExecTime' d
+
 -- | Increase the counter for invoked instructions.
 incInstrInvoked :: InterpreterM ()
 incInstrInvoked = updateCounter incInstrInvoked'
@@ -113,6 +127,19 @@ incPatternRuns name = updateCounter $ incPatternRuns' name
 -- | Increase the counter for called procedures.
 incProcCalls :: Text -> InterpreterM ()
 incProcCalls name = updateCounter $ incProcCalls' name
+
+-- | Update the counters for http GET.
+updHttpGETCounters :: NominalDiffTime -> Int64 -> HttpStatus -> InterpreterM ()
+updHttpGETCounters d bytes status =
+    updateCounter $ updHttpGETCounters' d bytes status
+
+-- | Measure the time of an action.
+timedAction :: InterpreterM a -> InterpreterM (a, NominalDiffTime)
+timedAction act = do
+  start  <- liftIO getCurrentTime
+  result <- act
+  stop   <- liftIO getCurrentTime
+  return $! (result, stop `diffUTCTime` start)
 
 -- | Evaluate a value.
 evalValue :: Value -> InterpreterM Int64

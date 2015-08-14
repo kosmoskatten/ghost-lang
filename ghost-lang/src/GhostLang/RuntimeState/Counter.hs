@@ -1,11 +1,14 @@
 {-# LANGUAGE RecordWildCards #-}
 module GhostLang.RuntimeState.Counter
     ( Counter (..)
+    , HttpStatus (..)
     , emptyCounter
+    , incPatternExecTime'
     , incInstrInvoked'
     , incLoopCmds'
     , incConcCmds'
     , incProcCalls'
+    , updHttpGETCounters'
     , getProcCalls
     , getTotalProcCalls
     , incPatternRuns'
@@ -15,39 +18,61 @@ module GhostLang.RuntimeState.Counter
 
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
+import Data.Time (NominalDiffTime)
 import GHC.Int (Int64)
 import qualified Data.Map.Strict as Map
 
+data HttpStatus = Success | Failure
+   deriving (Eq, Show)
+
 -- | Statistics counter for Ghost lang code execution.
-data Counter = 
-    Counter { instrInvoked :: {-# UNPACK #-} !Int64 
+data Counter =
+    Counter { patternExecTime :: !NominalDiffTime
+            -- ^ The total execution time in seconds.
+
+            , instrInvoked    :: {-# UNPACK #-} !Int64 
             -- ^ The number of instructions invoked during the
             -- execution.
 
-            , loopCmds     :: {-# UNPACK #-} !Int64
+            , loopCmds        :: {-# UNPACK #-} !Int64
             -- ^ The number of loop commands run during the execution.
 
-            , concCmds     :: {-# UNPACK #-} !Int64
+            , concCmds        :: {-# UNPACK #-} !Int64
 
-            , procCalls    :: !(Map.Map Text Int64)
+            , procCalls       :: !(Map.Map Text Int64)
             -- ^ Book keeping of the number of times certain
             -- procedures are called.
 
-            , patternRuns  :: !(Map.Map Text Int64)
+            , patternRuns     :: !(Map.Map Text Int64)
             -- ^ Book keeping of the number of times certain patterns
             -- are executed.
+
+            , httpGETExecTime :: !NominalDiffTime
+            , httpGETBytes    :: {-# UNPACK #-} !Int64
+            , httpGETSuccess  :: {-# UNPACK #-} !Int64
+            , httpGETFailures :: {-# UNPACK #-} !Int64
             }
     deriving Show
 
 -- | Create an empty counter.
 emptyCounter :: Counter
 emptyCounter =
-    Counter { instrInvoked  = 0
-            , loopCmds      = 0
-            , concCmds      = 0
-            , procCalls     = Map.empty
-            , patternRuns   = Map.empty
+    Counter { patternExecTime = toEnum 0
+            , instrInvoked    = 0
+            , loopCmds        = 0
+            , concCmds        = 0
+            , procCalls       = Map.empty
+            , patternRuns     = Map.empty
+            , httpGETExecTime = toEnum 0
+            , httpGETBytes    = 0
+            , httpGETSuccess  = 0
+            , httpGETFailures = 0
             }
+
+-- | Increase the pattern execution time.
+incPatternExecTime' :: NominalDiffTime -> Counter -> Counter
+incPatternExecTime' d c@Counter {..} = 
+    c { patternExecTime = patternExecTime + d }
 
 -- | Increase the invoke counter by 1.
 incInstrInvoked' :: Counter -> Counter
@@ -66,6 +91,18 @@ incProcCalls' :: Text -> Counter -> Counter
 incProcCalls' p c@Counter {..} =
     let g = maybe (Just 1) (Just . (1 +))
     in c { procCalls = Map.alter g p procCalls }
+
+-- | Update counters for http GET
+updHttpGETCounters' :: NominalDiffTime -> Int64 
+                    -> HttpStatus -> Counter -> Counter
+updHttpGETCounters' d bytes status c@Counter {..} =
+    let incSuccCount = if status == Success then 1 else 0
+        incFailCount = if status == Failure then 1 else 0
+    in c { httpGETExecTime = httpGETExecTime + d
+         , httpGETBytes    = bytes
+         , httpGETSuccess  = incSuccCount
+         , httpGETFailures = incFailCount
+         }
 
 -- | Get the value for the procedure call counter for procedure 'p'.
 getProcCalls :: Text -> Counter -> Int64

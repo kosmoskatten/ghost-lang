@@ -10,10 +10,12 @@ import Data.Maybe (fromJust)
 import GhostLang.Interpreter.InterpreterM ( InterpreterM
                                           , runInterpreter
                                           , incInstrInvoked
+                                          , incPatternExecTime
                                           , incPatternRuns
                                           , incLoopCmds
                                           , incConcCmds
                                           , incProcCalls
+                                          , timedAction
                                           , evalValue
                                           , trace
                                           , ask
@@ -43,7 +45,8 @@ execPattern :: InstructionSet a => Pattern a -> InterpreterM ()
 execPattern (Pattern _ name _ ops) = do
   trace $ printf "Enter pattern '%s'" (T.unpack name)
   incPatternRuns name
-  mapM_ exec ops
+  (_, d) <- timedAction $ mapM_ exec ops
+  incPatternExecTime d
   trace $ printf "Exit pattern '%s'" (T.unpack name)
 
 execOperation :: InstructionSet a => Operation a -> InterpreterM ()

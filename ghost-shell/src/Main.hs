@@ -4,6 +4,7 @@ module Main
     ) where
 
 import Command (Command (..), parseCommand)
+import Control.Concurrent.STM (newTVarIO, readTVarIO)
 import Control.Monad (forM_)
 import Control.Monad.State.Strict ( StateT
                                   , MonadState
@@ -17,6 +18,7 @@ import qualified Data.Text as T
 import GhostLang ( GhostProgram
                  , NetworkConfiguration (..)
                  , compileAndLink
+                 , emptyCounter
                  , emptyNetworkConfiguration
                  , toPatternList
                  , runPattern
@@ -99,8 +101,11 @@ eval (RunPattern pattern mode) = do
             maybePat = find (\(p, _, _) -> p == T.pack pattern) plist
         case maybePat of
           Just (_, _, pat) -> do
-              nc <- networkConfiguration <$> get
-              liftIO $ runPattern pat [] nc mode
+              nc  <- networkConfiguration <$> get
+              cnt <- liftIO $ newTVarIO emptyCounter
+              liftIO $ runPattern pat [cnt] nc mode
+              cnt' <- liftIO $ readTVarIO cnt
+              liftIO $ printf "Counter set contents: %s\n" (show cnt')
           Nothing  -> liftIO $ printf "Cannot find pattern '%s'\n" pattern
     Nothing -> liftIO $ printf "No program loaded\n"
 
