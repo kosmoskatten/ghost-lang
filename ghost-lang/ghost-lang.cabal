@@ -72,6 +72,7 @@ library
                      , http-client
                      , http-types
                      , mtl
+                     , network
                      , parsec
                      , stm
                      , text
