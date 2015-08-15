@@ -3,4 +3,5 @@ packages:
 - ./ghost-lang
 - ./ghost-shell
 - ./ghost-server
+- ./ghost-node
 extra-deps: []
