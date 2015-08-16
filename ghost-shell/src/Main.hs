@@ -4,6 +4,14 @@ module Main
     ) where
 
 import Command (Command (..), parseCommand)
+import Shell (Shell, runShell)
+
+
+main :: IO ()
+main = return ()
+
+{-
+import Command (Command (..), parseCommand)
 import Control.Concurrent.STM (newTVarIO, readTVarIO)
 import Control.Monad (forM_)
 import Control.Monad.State.Strict ( StateT
@@ -138,3 +146,5 @@ emptyState = State { loadedProgram        = Nothing
 
 setLoadedProgram :: LoadedProgram -> Shell ()
 setLoadedProgram p = modify' $ \s -> s { loadedProgram = Just p }
+
+-}

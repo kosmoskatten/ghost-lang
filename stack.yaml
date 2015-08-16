@@ -1,5 +1,6 @@
 resolver: nightly-2015-07-30
 packages:
+- ./ghost-api
 - ./ghost-lang
 - ./ghost-shell
 - ./ghost-server
