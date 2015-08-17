@@ -3,11 +3,13 @@ module GhostLang.Node
     ( runNode
     ) where
 
+import Control.Concurrent.STM (TVar)
 import Data.ByteString (ByteString)
 import GhostLang.API ( LoadProgram (..)
                      , LoadProgramResult (..)
                      , encode
                      , decode )
+import GhostLang.Node.State (State, emptyState)
 import Network.HTTP.Types
 import Network.Wai
 import Network.Wai.Handler.Warp (run)
@@ -18,22 +20,26 @@ runNode port = run port router
 
 -- | Route request to their handlers.
 router :: Application
-router request respond = respond $ 
+router request respond = 
     case pathInfo request of
       ["program", "load"]
-          | requestMethod request == "POST" -> handleProgramLoad request
-          | otherwise                       -> handleNotAllowed "POST"
+          | requestMethod request == "POST" -> 
+              handleProgramLoad request respond
+          | otherwise                       -> 
+              handleNotAllowed "POST" request respond
 
       -- No matching handler is found.
-      _ -> notFound
+      _ -> notFound request respond
 
-handleProgramLoad :: Request -> Response
-handleProgramLoad _ = 
-    responseLBS status409 [("Content-Type", "application/json")] $
-                encode LoadProgramResult { description = Just "tjoho" }
+handleProgramLoad :: Application
+handleProgramLoad _ respond = undefined
+--    respond $ responseLBS status409 [("Content-Type", "application/json")] $
+--                  encode LoadProgramResult { description = Just "tjoho" }
 
-handleNotAllowed :: ByteString -> Response
-handleNotAllowed allow = responseLBS status405 [("Allow", allow)] ""
+handleNotAllowed :: ByteString -> Application
+handleNotAllowed allow _ respond = 
+    respond $ responseLBS status405 [("Allow", allow)] ""
 
-notFound :: Response
-notFound = responseLBS status404 [("Content-Type", "text/plain")] "Not Found"
+notFound :: Application
+notFound _ respond = 
+    respond $ responseLBS status404 [("Content-Type", "text/plain")] "Not Found"

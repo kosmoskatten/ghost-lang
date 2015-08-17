@@ -14,12 +14,18 @@ cabal-version:       >=1.10
 executable ghost-node
   main-is:             Main.hs
   other-modules:       GhostLang.Node
+                       GhostLang.Node.State
+                       GhostLang.Node.IdGen
   build-depends:       base >= 4 && <5
                      , aeson
+                     , base64-string
                      , bytestring
+                     , containers
                      , ghost-api
                      , ghost-lang
                      , http-types
+                     , random
+                     , stm
                      , text
                      , wai
                      , warp

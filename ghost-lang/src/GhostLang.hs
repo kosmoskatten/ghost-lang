@@ -4,6 +4,7 @@
 module GhostLang
     ( GhostProgram
     , GhostPattern
+    , PatternTuple
     , Counter (..)
     , Mode (..)
     , NetworkConfiguration (..)
