@@ -2,8 +2,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 module GhostLang.API
     ( LoadProgram (..)
+    , PatternInfo (..)
     , Resource (..)
     , loadProgram
+    , listProgram
     , module Data.Aeson
     ) where
 
@@ -21,13 +23,20 @@ import Network.HTTP.Client ( Manager
 import Network.HTTP.Types
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Lazy.Char8 as LBS
+import qualified Data.Text as T
 
 data LoadProgram = LoadProgram { filePath :: !Text }
+    deriving (Generic, Show)
+
+data PatternInfo = PatternInfo { patternName   :: !Text
+                               , patternWeight :: !Int
+                               }
     deriving (Generic, Show)
 
 data Resource = Resource { resourceId :: !Text }
     deriving (Generic, Show)
 
+-- | Load a program on the remote node.
 loadProgram :: Manager -> String -> Text -> IO (Either String Text)
 loadProgram mgr baseUrl fp = do
   let msg = LoadProgram { filePath = fp }
@@ -46,6 +55,25 @@ loadProgram mgr baseUrl fp = do
 loadProgramUrl :: String
 loadProgramUrl = "/program/load"
 
+-- | List the patterns for the given program on the remote node.
+listProgram :: Manager -> String -> Text -> IO (Either String [PatternInfo])
+listProgram mgr baseUrl resId = do
+  let url = baseUrl `mappend` (T.unpack resId) `mappend` listProgramUrl
+  result <- tryString $ do
+      req <- mkGetRequest url
+      serverTalk req mgr
+  case result of
+    Left e -> return $ Left e
+    Right (stat, body)
+        | stat == status200 -> do
+                let answer = strongDecode body
+                return $ Right answer
+        | otherwise         -> return $ Left (LBS.unpack body)
+  
+-- | Url to the resource ofn which a program list can be issued.
+listProgramUrl :: String
+listProgramUrl = "/list"
+
 -- | Make a POST request carrying a JSON object. Can throw exception
 -- if the url is malformed.
 mkPostRequest :: ToJSON a => String -> a -> IO Request
@@ -57,6 +85,16 @@ mkPostRequest url msg = do
                                , ("Accept", "application/json") ]
             , checkStatus    = \_ _ _ -> Nothing
             , requestBody    = RequestBodyLBS (encode msg)
+            }
+  return req
+
+-- | Make a GET request. Can throw exception if the url is malformed.
+mkGetRequest :: String -> IO Request
+mkGetRequest url = do
+  initReq <- parseUrl url
+  let req = initReq
+            { requestHeaders = [ ("Accept", "application/json") ]
+            , checkStatus    = \_ _ _ -> Nothing
             }
   return req
 
@@ -91,5 +129,7 @@ tryString act = do
 -- | Aeson instances.
 instance FromJSON LoadProgram
 instance ToJSON LoadProgram
+instance FromJSON PatternInfo
+instance ToJSON PatternInfo
 instance FromJSON Resource
 instance ToJSON Resource

@@ -13,8 +13,8 @@ import qualified Data.Text as T
 -- | Simple data type to model the shell commands.
 data Command where
     LoadProgram   :: !Text -> Command
+    ListProgram   :: Command
     Status        :: Command
-    ListInfo      :: Command
     SetHttpParams :: !String -> !Int -> Command
     RunPattern    :: !String -> !Mode -> Command
     Help          :: Command
@@ -32,8 +32,8 @@ parseCommand str =
 
 aCommand :: Parser Command
 aCommand = spaces *> ( try loadProgram
+                   <|> try listProgram
                    <|> try status
-                   <|> try listInfo
                    <|> try setHttpParams
                    <|> try runPattern
                    <|> try help 
@@ -47,11 +47,11 @@ loadProgram = do
   spaces >> eof
   return $ LoadProgram (T.pack path')
 
+listProgram :: Parser Command
+listProgram = string "list-program" >> spaces >> eof >> pure ListProgram
+
 status :: Parser Command
 status = string "status" >> spaces >> eof >> pure Status
-
-listInfo :: Parser Command
-listInfo = string "list-info" >> spaces >> eof >> pure ListInfo
 
 setHttpParams :: Parser Command
 setHttpParams = do

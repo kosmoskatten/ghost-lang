@@ -4,6 +4,7 @@ module Shell
     ( Shell
     , runShell
     , nodeLoadProgram
+    , nodeListProgram
     , storeProgramResource
     , liftIO
     ) where
@@ -17,7 +18,7 @@ import Control.Monad.State ( StateT
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Maybe (fromJust, isJust)
 import Data.Text (Text)
-import GhostLang.API (loadProgram)
+import GhostLang.API (PatternInfo (..), loadProgram, listProgram)
 import Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
 
 data Context = Context { nodeAddress  :: !String
@@ -38,6 +39,17 @@ nodeLoadProgram filePath = do
   baseUrl <- nodeAddress <$> get
   mgr     <- manager     <$> get
   liftIO $ loadProgram mgr baseUrl filePath
+
+nodeListProgram :: Shell (Either String [PatternInfo])
+nodeListProgram = do
+  maybeProg <- progResource <$> get
+  maybe (return $ Left "No saved program") nodeListProgram' maybeProg
+    where 
+      nodeListProgram' :: Text -> Shell (Either String [PatternInfo])
+      nodeListProgram' prog = do
+          baseUrl <- nodeAddress <$> get
+          mgr     <- manager     <$> get
+          liftIO $ listProgram mgr baseUrl prog
 
 storeProgramResource :: Text -> Shell ()
 storeProgramResource res = modify' $ \s -> s { progResource = Just res }

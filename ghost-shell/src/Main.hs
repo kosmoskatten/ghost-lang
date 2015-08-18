@@ -7,6 +7,7 @@ import Command (Command (..), parseCommand)
 import Shell ( Shell
              , runShell
              , nodeLoadProgram
+             , nodeListProgram
              , storeProgramResource
              , liftIO
              )
@@ -29,6 +30,7 @@ repl = do
 -- | Evaluate a command.
 eval :: Command -> Shell ()
 
+-- | Load a program.
 eval (LoadProgram path) = do
   result <- nodeLoadProgram path
   case result of
@@ -36,6 +38,14 @@ eval (LoadProgram path) = do
     Right res -> do
         liftIO $ printf "Saving resource: %s\n" (T.unpack res)
         storeProgramResource res
+  repl
+
+-- | List the patterns from the saved program.
+eval ListProgram = do
+  result <- nodeListProgram
+  case result of
+    Left err  -> liftIO $ printf "Error: %s\n" err
+    Right res -> liftIO $ printf "Patterns: %s\n" (show res)
   repl
 
 -- | Print help information.
