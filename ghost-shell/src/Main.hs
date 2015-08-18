@@ -4,11 +4,42 @@ module Main
     ) where
 
 import Command (Command (..), parseCommand)
-import Shell (Shell, runShell)
-
+import Shell ( Shell
+             , runShell
+             , nodeLoadProgram
+             , storeProgramResource
+             , liftIO
+             )
+import System.Environment (getArgs)
+import System.IO (hFlush, stdout)
+import Text.Printf (printf)
 
 main :: IO ()
-main = return ()
+main = do
+  [nodeAddress] <- getArgs
+  runShell repl nodeAddress
+
+-- | Entry point for the read-eval-print-loop.
+repl :: Shell ()
+repl = do
+  liftIO $ putStr "> " >> hFlush stdout
+  eval =<< parseCommand <$> liftIO getLine
+
+-- | Evaluate a command.
+eval :: Command -> Shell ()
+
+eval (LoadProgram path) = do
+  result <- nodeLoadProgram path
+  case result of
+    Left  err -> liftIO $ printf "Error: %s\n" err
+    Right res -> do
+        liftIO $ printf "Saving resource: %s\n" res
+        storeProgramResource res
+  repl
+
+eval c = do
+  liftIO $ printf "Command '%s' not yet implemented\n" (show c)
+  repl
 
 {-
 import Command (Command (..), parseCommand)
