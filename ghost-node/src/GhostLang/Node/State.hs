@@ -11,20 +11,21 @@ import Control.Concurrent.STM ( TVar
                               , newTVarIO
                               , modifyTVar'
                               )
+import Data.Text (Text)
 import GhostLang (GhostProgram, PatternTuple)
 import qualified Data.Map.Strict as Map
 
 -- | A representation of a compiled program.
 data ProgramRepr =
-    ProgramRepr { filePath     :: !FilePath
-                , resourceId   :: !String
+    ProgramRepr { filePath_    :: !Text
+                , resourceId_  :: !Text
                 , ghostProgram :: !GhostProgram
                 , patternList  :: ![PatternTuple]
                 }
 
 -- | Map from (program id) string to the corresponding program
 -- representation.
-type ProgramMap = Map.Map String ProgramRepr
+type ProgramMap = Map.Map Text ProgramRepr
 
 -- | State for the ghost-node.
 data State = State { programMap :: TVar ProgramMap }
@@ -33,7 +34,7 @@ data State = State { programMap :: TVar ProgramMap }
 emptyState :: IO State
 emptyState = State <$> newTVarIO Map.empty
 
-insertProgram :: State -> String -> ProgramRepr -> IO ()
+insertProgram :: State -> Text -> ProgramRepr -> IO ()
 insertProgram State {..} resId prog = 
     atomically $ modifyTVar' programMap $ Map.insert resId prog
 

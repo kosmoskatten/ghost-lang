@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module GhostLang.API
     ( LoadProgram (..)
-    , LoadProgramResult (..)
+    , Resource (..)
     , loadProgram
     , module Data.Aeson
     ) where
@@ -10,6 +10,7 @@ module GhostLang.API
 import Control.Exception (SomeException, try)
 import Data.Aeson
 import Data.Maybe (fromJust)
+import Data.Text (Text)
 import GHC.Generics (Generic)
 import Network.HTTP.Client ( Manager
                            , Response (..)
@@ -21,14 +22,13 @@ import Network.HTTP.Types
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Lazy.Char8 as LBS
 
-data LoadProgram = LoadProgram { filePath :: !FilePath }
+data LoadProgram = LoadProgram { filePath :: !Text }
     deriving (Generic, Show)
 
-data LoadProgramResult = 
-    LoadProgramResult { progId :: !String }
+data Resource = Resource { resourceId :: !Text }
     deriving (Generic, Show)
 
-loadProgram :: Manager -> String -> FilePath -> IO (Either String String)
+loadProgram :: Manager -> String -> Text -> IO (Either String Text)
 loadProgram mgr baseUrl fp = do
   let msg = LoadProgram { filePath = fp }
   result <- tryString $ do
@@ -38,7 +38,7 @@ loadProgram mgr baseUrl fp = do
     Left e -> return $ Left e
     Right (stat, body)
         | stat == status201 -> do
-                let answer = progId $ strongDecode body
+                let answer = resourceId $ strongDecode body
                 return $ Right answer
         | otherwise         -> return $ Left (LBS.unpack body)
 
@@ -91,5 +91,5 @@ tryString act = do
 -- | Aeson instances.
 instance FromJSON LoadProgram
 instance ToJSON LoadProgram
-instance FromJSON LoadProgramResult
-instance ToJSON LoadProgramResult
+instance FromJSON Resource
+instance ToJSON Resource

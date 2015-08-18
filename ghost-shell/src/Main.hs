@@ -13,6 +13,7 @@ import Shell ( Shell
 import System.Environment (getArgs)
 import System.IO (hFlush, stdout)
 import Text.Printf (printf)
+import qualified Data.Text as T
 
 main :: IO ()
 main = do
@@ -33,8 +34,26 @@ eval (LoadProgram path) = do
   case result of
     Left  err -> liftIO $ printf "Error: %s\n" err
     Right res -> do
-        liftIO $ printf "Saving resource: %s\n" res
+        liftIO $ printf "Saving resource: %s\n" (T.unpack res)
         storeProgramResource res
+  repl
+
+-- | Print help information.
+eval Help = do
+  liftIO $ putStrLn "Help ..."
+  repl
+
+-- | Quit the repl loop.
+eval Quit = do
+  liftIO $ putStrLn "Bye!"
+  return ()
+
+-- | Just an empty line.
+eval EmptyLine = repl
+
+-- | Unknown stuff ...
+eval (Unknown str) = do
+  liftIO $ putStrLn str
   repl
 
 eval c = do

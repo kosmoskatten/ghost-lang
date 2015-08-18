@@ -3,21 +3,25 @@ module GhostLang.Node
     ( runNode
     ) where
 
-import Control.Concurrent.STM (TVar)
 import Data.ByteString (ByteString)
 import Data.Maybe (fromJust)
-import GhostLang (compileAndLink)
+import GhostLang (compileAndLink, toPatternList)
 import GhostLang.API ( LoadProgram (..)
-                     , LoadProgramResult (..)
+                     , Resource (..)
                      , FromJSON
                      , encode
                      , decode' )
-import GhostLang.Node.State (State, emptyState)
+import GhostLang.Node.IdGen (genId)
+import GhostLang.Node.State ( State
+                            , ProgramRepr (..)
+                            , emptyState
+                            , insertProgram )
 import Network.HTTP.Types
 import Network.Wai
 import Network.Wai.Handler.Warp (run)
 import Text.Printf (printf)
 import qualified Data.ByteString.Lazy.Char8 as LBS
+import qualified Data.Text as T
 
 -- | Start and run the ghost-node.
 runNode :: Int -> IO ()
@@ -40,12 +44,19 @@ router state request respond =
 
 handleProgramLoad :: State -> Application
 handleProgramLoad state request respond = do
-  msg <- decodeBody request
-  printf "Got path: %s\n" (filePath msg)
-  result <- compileAndLink (filePath msg)
+  msg    <- decodeBody request
+  result <- compileAndLink (T.unpack $ filePath msg)
   case result of
     Right prog -> do
-        let answer = LoadProgramResult { progId = "/hej/hopp" }
+        id' <- genId
+        let res      = "/program/" `mappend` id'
+            answer   = Resource { resourceId = res }
+            progRepr = ProgramRepr { filePath_    = filePath msg
+                                   , resourceId_  = res
+                                   , ghostProgram = prog
+                                   , patternList  = toPatternList prog
+                                   }
+        insertProgram state id' progRepr
         respond $ responseLBS status201 [("Content-Type", "application/json")] $
                               encode answer
     Left err   ->

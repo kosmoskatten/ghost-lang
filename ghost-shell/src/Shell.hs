@@ -16,11 +16,12 @@ import Control.Monad.State ( StateT
                            )
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Maybe (fromJust, isJust)
+import Data.Text (Text)
 import GhostLang.API (loadProgram)
 import Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
 
 data Context = Context { nodeAddress  :: !String
-                       , progResource :: !(Maybe String)
+                       , progResource :: !(Maybe Text)
                        , manager      :: !Manager
                        }
 
@@ -32,11 +33,11 @@ runShell act address = do
   context <- Context address Nothing <$> newManager defaultManagerSettings
   evalStateT (extractShell act) context
 
-nodeLoadProgram :: FilePath -> Shell (Either String String)
+nodeLoadProgram :: Text -> Shell (Either String Text)
 nodeLoadProgram filePath = do
   baseUrl <- nodeAddress <$> get
   mgr     <- manager     <$> get
   liftIO $ loadProgram mgr baseUrl filePath
 
-storeProgramResource :: String -> Shell ()
+storeProgramResource :: Text -> Shell ()
 storeProgramResource res = modify' $ \s -> s { progResource = Just res }

@@ -4,13 +4,15 @@ module Command
     , parseCommand
     ) where
 
+import Data.Text (Text)
 import GhostLang (Mode (..))
 import Text.Parsec
 import Text.Parsec.String (Parser)
+import qualified Data.Text as T
 
 -- | Simple data type to model the shell commands.
 data Command where
-    LoadProgram   :: !FilePath -> Command
+    LoadProgram   :: !Text -> Command
     Status        :: Command
     ListInfo      :: Command
     SetHttpParams :: !String -> !Int -> Command
@@ -43,7 +45,7 @@ loadProgram = do
   string "load-program" >> spaces
   path' <- path
   spaces >> eof
-  return $ LoadProgram path'
+  return $ LoadProgram (T.pack path')
 
 status :: Parser Command
 status = string "status" >> spaces >> eof >> pure Status
