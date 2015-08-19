@@ -14,6 +14,7 @@ import Data.Aeson
 import Data.Maybe (fromJust)
 import Data.Text (Text)
 import GHC.Generics (Generic)
+import GHC.Int (Int64)
 import Network.HTTP.Client ( Manager
                            , Response (..)
                            , Request (..)
@@ -29,7 +30,7 @@ data LoadProgram = LoadProgram { filePath :: !Text }
     deriving (Generic, Show)
 
 data PatternInfo = PatternInfo { patternName   :: !Text
-                               , patternWeight :: !Int
+                               , patternWeight :: !Int64
                                }
     deriving (Generic, Show)
 

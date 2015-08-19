@@ -4,12 +4,14 @@ module GhostLang.Node.State
     , ProgramRepr (..)
     , emptyState
     , insertProgram
+    , lookupProgram
     ) where
 
 import Control.Concurrent.STM ( TVar
                               , atomically
                               , newTVarIO
                               , modifyTVar'
+                              , readTVarIO
                               )
 import Data.Text (Text)
 import GhostLang (GhostProgram, PatternTuple)
@@ -34,7 +36,11 @@ data State = State { programMap :: TVar ProgramMap }
 emptyState :: IO State
 emptyState = State <$> newTVarIO Map.empty
 
+-- | Store a compiled ghost-program into the program map.
 insertProgram :: State -> Text -> ProgramRepr -> IO ()
 insertProgram State {..} resId prog = 
     atomically $ modifyTVar' programMap $ Map.insert resId prog
 
+-- | Lookup a ghost-program from the program map.
+lookupProgram :: State -> Text -> IO (Maybe ProgramRepr)
+lookupProgram State {..} resId = Map.lookup resId <$> readTVarIO programMap
