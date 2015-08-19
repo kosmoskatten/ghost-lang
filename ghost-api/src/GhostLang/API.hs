@@ -5,7 +5,8 @@ module GhostLang.API
     , PatternInfo (..)
     , Resource (..)
     , loadProgram
-    , listProgram
+    , listSelectedProgram
+    , listPrograms
     , module Data.Aeson
     ) where
 
@@ -45,35 +46,47 @@ loadProgram mgr baseUrl fp = do
       req <- mkPostRequest (baseUrl `mappend` loadProgramUrl) msg
       serverTalk req mgr
   case result of
-    Left e -> return $ Left e
     Right (stat, body)
         | stat == status201 -> do
                 let answer = resourceId $ strongDecode body
                 return $ Right answer
         | otherwise         -> return $ Left (LBS.unpack body)
+    Left e                  -> return $ Left e
 
 -- | Url to the resource on which a program load can be issued.
 loadProgramUrl :: String
 loadProgramUrl = "/program/load"
 
--- | List the patterns for the given program on the remote node.
-listProgram :: Manager -> String -> Text -> IO (Either String [PatternInfo])
-listProgram mgr baseUrl resId = do
-  let url = baseUrl `mappend` (T.unpack resId) `mappend` listProgramUrl
+-- | List the patterns for the selected program on the remote node.
+listSelectedProgram :: Manager -> String -> Text 
+                    -> IO (Either String [PatternInfo])
+listSelectedProgram mgr baseUrl resId = do
+  let url = baseUrl `mappend` (T.unpack resId) `mappend` "/list"
   result <- tryString $ do
       req <- mkGetRequest url
       serverTalk req mgr
   case result of
-    Left e -> return $ Left e
     Right (stat, body)
-        | stat == status200 -> do
-                let answer = strongDecode body
-                return $ Right answer
+        | stat == status200 -> return $ Right (strongDecode body)
         | otherwise         -> return $ Left (LBS.unpack body)
+    Left e                  -> return $ Left e
+
+-- | List the resource urls for all loaded programs on the node.
+listPrograms :: Manager -> String -> IO (Either String [Resource])
+listPrograms mgr baseUrl = do
+  let url = baseUrl `mappend` listProgramsUrl
+  result <- tryString $ do
+      req <- mkGetRequest url
+      serverTalk req mgr
+  case result of
+    Right (stat, body)
+        | stat == status200 -> return $ Right (strongDecode body)
+        | otherwise         -> return $ Left (LBS.unpack body)
+    Left e                  -> return $ Left e
   
--- | Url to the resource ofn which a program list can be issued.
-listProgramUrl :: String
-listProgramUrl = "/list"
+-- | Url to the resource of which a program list can be issued.
+listProgramsUrl :: String
+listProgramsUrl = "/program/list"
 
 -- | Make a POST request carrying a JSON object. Can throw exception
 -- if the url is malformed.

@@ -7,7 +7,8 @@ import Command (Command (..), parseCommand)
 import Shell ( Shell
              , runShell
              , nodeLoadProgram
-             , nodeListProgram
+             , nodeListSelectedProgram
+             , nodeListPrograms
              , storeProgramResource
              , liftIO
              )
@@ -41,11 +42,19 @@ eval (LoadProgram path) = do
   repl
 
 -- | List the patterns from the saved program.
-eval ListProgram = do
-  result <- nodeListProgram
+eval ListSelectedProgram = do
+  result <- nodeListSelectedProgram
   case result of
     Left err  -> liftIO $ printf "Error: %s\n" err
     Right res -> liftIO $ printf "Patterns: %s\n" (show res)
+  repl
+
+-- | List the programs available on the node.
+eval ListPrograms = do
+  result <- nodeListPrograms
+  case result of
+    Left err  -> liftIO $ printf "Error: %s\n" err
+    Right res -> liftIO $ printf "Programs: %s\n" (show res)
   repl
 
 -- | Print help information.
