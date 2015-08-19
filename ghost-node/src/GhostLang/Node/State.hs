@@ -5,6 +5,7 @@ module GhostLang.Node.State
     , emptyState
     , insertProgram
     , lookupProgram
+    , allPrograms
     ) where
 
 import Control.Concurrent.STM ( TVar
@@ -44,3 +45,7 @@ insertProgram State {..} resId prog =
 -- | Lookup a ghost-program from the program map.
 lookupProgram :: State -> Text -> IO (Maybe ProgramRepr)
 lookupProgram State {..} resId = Map.lookup resId <$> readTVarIO programMap
+
+-- | Enumerate all programs from the program map.
+allPrograms :: State -> IO [ProgramRepr]
+allPrograms State {..} = Map.elems <$> readTVarIO programMap

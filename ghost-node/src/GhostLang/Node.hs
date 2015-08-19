@@ -6,11 +6,12 @@ module GhostLang.Node
 import Data.ByteString (ByteString)
 import Data.Maybe (fromJust)
 import Data.Text (Text)
-import GhostLang (PatternTuple, compileAndLink, toPatternList)
+import GhostLang (compileAndLink, toPatternList)
 import GhostLang.API ( LoadProgram (..)
                      , PatternInfo (..)
                      , Resource (..)
                      , FromJSON
+                     , ToJSON
                      , encode
                      , decode' )
 import GhostLang.Node.IdGen (genId)
@@ -18,7 +19,8 @@ import GhostLang.Node.State ( State
                             , ProgramRepr (..)
                             , emptyState
                             , insertProgram
-                            , lookupProgram )
+                            , lookupProgram
+                            , allPrograms )
 import Network.HTTP.Types
 import Network.Wai
 import Network.Wai.Handler.Warp (run)
@@ -44,11 +46,20 @@ router state request respond =
           | otherwise                       -> 
               handleNotAllowed "POST" request respond
 
+      -- Route a request for listing all the resource ids for the
+      -- programs loaded.
+      ["program", "list"]
+          | requestMethod request == "GET" ->
+              handleProgramList state request respond
+          | otherwise                      ->
+              handleNotAllowed "GET" request respond
+
       -- Route a request for listing all the patterns contained in a
-      -- compiled ghost-program. Only GET requests are accepted.
+      -- selected compiled ghost-program. Only GET requests are
+      -- accepted.
       ["program", resId, "list"]
           | requestMethod request == "GET" ->
-              handleProgramList state resId request respond
+              handleSelectedProgramList state resId request respond
           | otherwise                      ->
               handleNotAllowed "GET" request respond
 
@@ -66,28 +77,33 @@ handleProgramLoad state request respond = do
   case result of
     Right prog -> do
         id' <- genId
-        let res      = "/program/" `mappend` id'
-            answer   = Resource { resourceId = res }
+        let resId    = "/program/" `mappend` id'
+            answer   = Resource { resourceId = resId }
             progRepr = ProgramRepr { filePath_    = filePath msg
-                                   , resourceId_  = res
+                                   , resourceId_  = resId
                                    , ghostProgram = prog
                                    , patternList  = toPatternList prog
                                    }
         insertProgram state id' progRepr
-        respond $ responseLBS status201 [("Content-Type", "application/json")] $
-                              encode answer
+        respond $ jsonResponse status201 answer
     Left err   ->
-        respond $ responseLBS status409 [("Content-Type", "text/plain")] $
-                LBS.pack err
--- | List the patterns for the given program.
-handleProgramList :: State -> Text -> Application
-handleProgramList state resId request respond = do
+        respond $ textResponse status409 $ LBS.pack err
+
+-- | List the resource ids for all loaded programs.
+handleProgramList :: State -> Application
+handleProgramList state _ respond = do
+  progs <- allPrograms state
+  let answer = map (Resource . resourceId_) progs
+  respond $ jsonResponse status200 answer
+
+-- | List the patterns for the selected program.
+handleSelectedProgramList :: State -> Text -> Application
+handleSelectedProgramList state resId request respond = do
   maybeProgram <- lookupProgram state resId
   case maybeProgram of
     Just prog -> do
       let answer = map (\(l, w, _) -> PatternInfo l w) $ patternList prog
-      respond $ responseLBS status200 [("Content-Type", "application/json")] $
-                            encode answer
+      respond $ jsonResponse status200 answer
     Nothing   -> notFound request respond
   
 handleNotAllowed :: ByteString -> Application
@@ -95,9 +111,14 @@ handleNotAllowed allow _ respond =
     respond $ responseLBS status405 [("Allow", allow)] ""
 
 notFound :: Application
-notFound _ respond = 
-    respond $ responseLBS status404 [("Content-Type", "text/plain")] 
-                "Resource Not Found"
+notFound _ respond = respond $ textResponse status404 "Resource Not Found"
+
+jsonResponse :: ToJSON a => Status -> a -> Response
+jsonResponse status = 
+    responseLBS status [("Content-Type", "application/json")] . encode
+
+textResponse :: Status -> LBS.ByteString -> Response
+textResponse status = responseLBS status [("Content-Type", "text/plain")]
 
 decodeBody :: FromJSON a => Request -> IO a
 decodeBody req = fromJust . decode' <$> lazyRequestBody req
