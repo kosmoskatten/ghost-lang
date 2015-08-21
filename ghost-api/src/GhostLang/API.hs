@@ -4,6 +4,8 @@ module GhostLang.API
     ( LoadProgram (..)
     , PatternInfo (..)
     , Resource (..)
+    , Service (..)
+    , getHttpConfig
     , loadProgram
     , listSelectedProgram
     , listPrograms
@@ -27,16 +29,41 @@ import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import qualified Data.Text as T
 
+-- | A data type that is describing the file path to the Main module
+-- for the program to be compiled and loaded.
 data LoadProgram = LoadProgram { filePath :: !Text }
     deriving (Generic, Show)
 
+-- | A data type that is describing the name and weight for a pattern.
 data PatternInfo = PatternInfo { patternName   :: !Text
                                , patternWeight :: !Int64
                                }
     deriving (Generic, Show)
 
+-- | A data type that is describing a resource id (url).
 data Resource = Resource { resourceId :: !Text }
     deriving (Generic, Show)
+
+-- | A data type that is describing a remote service.
+data Service = Service { serviceAddress :: !String
+                       , servicePort    :: !Int
+                       }
+    deriving (Generic, Show)
+
+-- | Get the http configuration.
+getHttpConfig :: Manager -> String -> IO (Either String Service)
+getHttpConfig mgr baseUrl = do
+  result <- tryString $ do
+      req <- mkGetRequest (baseUrl `mappend` httpConfigUrl)
+      serverTalk req mgr
+  case result of
+    Right (stat, body)
+        | stat == status200 -> return $ Right (strongDecode body)
+        | otherwise         -> return $ Left (LBS.unpack body)
+    Left e                  -> return $ Left e
+
+httpConfigUrl :: String
+httpConfigUrl = "/configuration/http"
 
 -- | Load a program on the remote node.
 loadProgram :: Manager -> String -> Text -> IO (Either String Text)
@@ -88,8 +115,8 @@ listPrograms mgr baseUrl = do
 listProgramsUrl :: String
 listProgramsUrl = "/program/list"
 
--- | Make a POST request carrying a JSON object. Can throw exception
--- if the url is malformed.
+-- | Make a POST request carrying a JSON object and expecting a JSON
+-- object as response. Can throw exception if the url is malformed.
 mkPostRequest :: ToJSON a => String -> a -> IO Request
 mkPostRequest url msg = do
   initReq <- parseUrl url
@@ -102,13 +129,26 @@ mkPostRequest url msg = do
             }
   return req
 
--- | Make a GET request. Can throw exception if the url is malformed.
+-- | Make a GET request and expecting a JSON object as response. Can
+-- throw exception if the url is malformed.
 mkGetRequest :: String -> IO Request
 mkGetRequest url = do
   initReq <- parseUrl url
   let req = initReq
             { requestHeaders = [ ("Accept", "application/json") ]
             , checkStatus    = \_ _ _ -> Nothing
+            }
+  return req
+
+-- | Make PUT request carrying a JSON object and expecting a non
+-- payload object as response.
+mkPutRequest :: ToJSON a => String -> a -> IO Request
+mkPutRequest url msg = do
+  initReq <- parseUrl url
+  let req = initReq
+            { method      = "PUT"
+            , checkStatus = \_ _ _ -> Nothing
+            , requestBody = RequestBodyLBS (encode msg)
             }
   return req
 
@@ -147,3 +187,5 @@ instance FromJSON PatternInfo
 instance ToJSON PatternInfo
 instance FromJSON Resource
 instance ToJSON Resource
+instance FromJSON Service
+instance ToJSON Service

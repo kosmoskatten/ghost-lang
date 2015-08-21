@@ -20,11 +20,14 @@ import GhostLang.Node.State ( State
                             , emptyState
                             , insertProgram
                             , lookupProgram
-                            , allPrograms )
+                            , allPrograms
+                            , getHttpConf
+                            , setHttpConf )
 import Network.HTTP.Types
 import Network.Wai
 import Network.Wai.Handler.Warp (run)
 import Text.Printf (printf)
+import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import qualified Data.Text as T
 
@@ -38,13 +41,22 @@ runNode port = do
 router :: State -> Application
 router state request respond = 
     case pathInfo request of
+      -- Request to read or set the http configuration.
+      ["configuration", "http"]
+          | requestMethod request == "GET"  -> 
+              handleReadHttpConfig state request respond
+          | requestMethod request == "PUT" ->
+              handleSetHttpConfig state request respond
+          | otherwise                       -> 
+              handleNotAllowed ["GET", "PUT"] request respond
+
       -- Route a request for compiling and loading a
       -- ghost-program. Only POST request are accepted.
       ["program", "load"]
           | requestMethod request == "POST" -> 
               handleProgramLoad state request respond
           | otherwise                       -> 
-              handleNotAllowed "POST" request respond
+              handleNotAllowed ["POST"] request respond
 
       -- Route a request for listing all the resource ids for the
       -- programs loaded.
@@ -52,7 +64,7 @@ router state request respond =
           | requestMethod request == "GET" ->
               handleProgramList state request respond
           | otherwise                      ->
-              handleNotAllowed "GET" request respond
+              handleNotAllowed ["GET"] request respond
 
       -- Route a request for listing all the patterns contained in a
       -- selected compiled ghost-program. Only GET requests are
@@ -61,10 +73,25 @@ router state request respond =
           | requestMethod request == "GET" ->
               handleSelectedProgramList state resId request respond
           | otherwise                      ->
-              handleNotAllowed "GET" request respond
+              handleNotAllowed ["GET"] request respond
 
       -- No matching handler is found.
       _ -> notFound request respond
+
+-- | Read the http configuration. Return the configuration as JSON
+-- with response code 200.
+handleReadHttpConfig :: State -> Application
+handleReadHttpConfig state _ respond = do
+  answer <- getHttpConf state
+  respond $ jsonResponse status200 answer
+
+-- | Set the http configuration carried in a Service record. Respond
+-- with an empty response code 200.
+handleSetHttpConfig :: State -> Application
+handleSetHttpConfig state request respond = do
+  msg <- decodeBody request
+  setHttpConf state msg
+  respond $ textResponse status200 ""
 
 -- | Handle the request of compiling and loading a ghost-program. If
 -- the compilation is successful, the compiled program is stored and a
@@ -106,9 +133,9 @@ handleSelectedProgramList state resId request respond = do
       respond $ jsonResponse status200 answer
     Nothing   -> notFound request respond
   
-handleNotAllowed :: ByteString -> Application
+handleNotAllowed :: [ByteString] -> Application
 handleNotAllowed allow _ respond = 
-    respond $ responseLBS status405 [("Allow", allow)] ""
+    respond $ responseLBS status405 [("Allow", "," `BS.intercalate` allow)] ""
 
 notFound :: Application
 notFound _ respond = respond $ textResponse status404 "Resource Not Found"
@@ -120,6 +147,8 @@ jsonResponse status =
 textResponse :: Status -> LBS.ByteString -> Response
 textResponse status = responseLBS status [("Content-Type", "text/plain")]
 
+-- | Strictly decode the body to a JSON data structure. May throw an
+-- exception if the decoding is failing.
 decodeBody :: FromJSON a => Request -> IO a
 decodeBody req = fromJust . decode' <$> lazyRequestBody req
   
