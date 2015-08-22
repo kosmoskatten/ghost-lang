@@ -4,19 +4,18 @@ module Command
     , parseCommand
     ) where
 
-import Data.Text (Text)
 import GhostLang (Mode (..))
 import Text.Parsec
 import Text.Parsec.String (Parser)
-import qualified Data.Text as T
 
 -- | Simple data type to model the shell commands.
 data Command where
-    LoadProgram         :: !Text -> Command
+    LoadProgram         :: !FilePath -> Command
     ListSelectedProgram :: Command
     ListPrograms        :: Command
+    GetHttpConfig       :: Command
+    SetHttpConfig       :: !String -> !Int -> Command
     Status              :: Command
-    SetHttpParams       :: !String -> !Int -> Command
     RunPattern          :: !String -> !Mode -> Command
     Help                :: Command
     Quit                :: Command
@@ -35,8 +34,9 @@ aCommand :: Parser Command
 aCommand = spaces *> ( try loadProgram
                    <|> try listSelectedProgram
                    <|> try listPrograms
+                   <|> try getHttpConfig
+                   <|> try setHttpConfig
                    <|> try status
-                   <|> try setHttpParams
                    <|> try runPattern
                    <|> try help 
                    <|> try quit 
@@ -47,7 +47,7 @@ loadProgram = do
   string "load-program" >> spaces
   path' <- path
   spaces >> eof
-  return $ LoadProgram (T.pack path')
+  return $ LoadProgram path'
 
 listSelectedProgram :: Parser Command
 listSelectedProgram = 
@@ -56,17 +56,21 @@ listSelectedProgram =
 listPrograms :: Parser Command
 listPrograms = string "list-programs" >> spaces >> eof >> pure ListPrograms
 
+getHttpConfig :: Parser Command
+getHttpConfig = string "get-http-config" >> spaces >> eof >> pure GetHttpConfig
+
+setHttpConfig :: Parser Command
+setHttpConfig = do
+  string "set-http-config" >> spaces
+  server' <- server
+  spaces
+  port' <- port
+  spaces >> eof
+  return $ SetHttpConfig server' port'
+
+
 status :: Parser Command
 status = string "status" >> spaces >> eof >> pure Status
-
-setHttpParams :: Parser Command
-setHttpParams = do
-  string "set-http-params" >> spaces
-  service' <- service
-  spaces
-  port'    <- port
-  spaces >> eof
-  return $ SetHttpParams service' port'
 
 runPattern :: Parser Command
 runPattern = do
@@ -94,8 +98,8 @@ path :: Parser FilePath
 path = (:) <$> char '/' <*> many1 (oneOf pathChar)
     where pathChar = ['a'..'z'] ++ ['A'..'Z'] ++ ['0'..'9'] ++ "._-/"
 
-service :: Parser String
-service = (:) <$> oneOf startChar <*> many (oneOf followChar)
+server :: Parser String
+server = (:) <$> oneOf startChar <*> many (oneOf followChar)
     where
       startChar  = ['a'..'z'] ++ ['A'..'Z'] ++ ['0'..'9']
       followChar = startChar ++ ".-:/"

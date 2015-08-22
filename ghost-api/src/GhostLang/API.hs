@@ -6,6 +6,7 @@ module GhostLang.API
     , Resource (..)
     , Service (..)
     , getHttpConfig
+    , setHttpConfig
     , loadProgram
     , listSelectedProgram
     , listPrograms
@@ -59,6 +60,18 @@ getHttpConfig mgr baseUrl = do
   case result of
     Right (stat, body)
         | stat == status200 -> return $ Right (strongDecode body)
+        | otherwise         -> return $ Left (LBS.unpack body)
+    Left e                  -> return $ Left e
+
+-- | Set the http configuration.
+setHttpConfig :: Manager -> String -> Service -> IO (Either String ())
+setHttpConfig mgr baseUrl conf = do
+  result <- tryString $ do
+    req <- mkPutRequest (baseUrl `mappend` httpConfigUrl) conf
+    serverTalk req mgr
+  case result of
+    Right (stat, body)
+        | stat == status200 -> return $ Right ()
         | otherwise         -> return $ Left (LBS.unpack body)
     Left e                  -> return $ Left e
 

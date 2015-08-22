@@ -3,6 +3,8 @@
 module Shell
     ( Shell
     , runShell
+    , nodeGetHttpConfig
+    , nodeSetHttpConfig
     , nodeLoadProgram
     , nodeListSelectedProgram
     , nodeListPrograms
@@ -17,15 +19,18 @@ import Control.Monad.State ( StateT
                            , modify'
                            )
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Maybe (fromJust, isJust)
 import Data.Text (Text)
 import GhostLang.API ( PatternInfo (..)
                      , Resource (..)
+                     , Service (..)
+                     , getHttpConfig
+                     , setHttpConfig
                      , loadProgram
                      , listSelectedProgram
                      , listPrograms
                      )
 import Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
+import qualified Data.Text as T
 
 data Context = Context { nodeAddress  :: !String
                        , progResource :: !(Maybe Text)
@@ -40,11 +45,21 @@ runShell act address = do
   context <- Context address Nothing <$> newManager defaultManagerSettings
   evalStateT (extractShell act) context
 
-nodeLoadProgram :: Text -> Shell (Either String Text)
+nodeGetHttpConfig :: Shell (Either String Service)
+nodeGetHttpConfig = do
+  (mgr, baseUrl) <- nodeParams
+  liftIO $ getHttpConfig mgr baseUrl
+
+nodeSetHttpConfig :: String -> Int -> Shell (Either String ())
+nodeSetHttpConfig server port = do
+  (mgr, baseUrl) <- nodeParams
+  liftIO $ setHttpConfig mgr baseUrl $ Service { serviceAddress = server
+                                               , servicePort    = port }
+
+nodeLoadProgram :: FilePath -> Shell (Either String Text)
 nodeLoadProgram filePath = do
-  baseUrl <- nodeAddress <$> get
-  mgr     <- manager     <$> get
-  liftIO $ loadProgram mgr baseUrl filePath
+  (mgr, baseUrl) <- nodeParams
+  liftIO $ loadProgram mgr baseUrl (T.pack filePath)
 
 nodeListSelectedProgram :: Shell (Either String [PatternInfo])
 nodeListSelectedProgram = do
@@ -53,15 +68,19 @@ nodeListSelectedProgram = do
     where 
       nodeListProgram' :: Text -> Shell (Either String [PatternInfo])
       nodeListProgram' prog = do
-          baseUrl <- nodeAddress <$> get
-          mgr     <- manager     <$> get
+          (mgr, baseUrl) <- nodeParams          
           liftIO $ listSelectedProgram mgr baseUrl prog
 
 nodeListPrograms :: Shell (Either String [Resource])
 nodeListPrograms = do
-  baseUrl <- nodeAddress <$> get
-  mgr     <- manager     <$> get
+  (mgr, baseUrl) <- nodeParams
   liftIO $ listPrograms mgr baseUrl
 
 storeProgramResource :: Text -> Shell ()
 storeProgramResource res = modify' $ \s -> s { progResource = Just res }
+
+nodeParams :: Shell (Manager, String)
+nodeParams = (,) <$> manager' <*> nodeAddress'
+    where
+      manager'     = manager     <$> get
+      nodeAddress' = nodeAddress <$> get

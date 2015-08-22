@@ -39,7 +39,8 @@ runNode port = do
 
 -- | Route request to their handlers.
 router :: State -> Application
-router state request respond = 
+router state request respond = do
+    printf "Req: %s\n" (show $ pathInfo request)
     case pathInfo request of
       -- Request to read or set the http configuration.
       ["configuration", "http"]

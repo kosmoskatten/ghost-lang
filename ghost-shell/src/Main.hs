@@ -6,6 +6,8 @@ module Main
 import Command (Command (..), parseCommand)
 import Shell ( Shell
              , runShell
+             , nodeGetHttpConfig
+             , nodeSetHttpConfig
              , nodeLoadProgram
              , nodeListSelectedProgram
              , nodeListPrograms
@@ -35,26 +37,42 @@ eval :: Command -> Shell ()
 eval (LoadProgram path) = do
   result <- nodeLoadProgram path
   case result of
-    Left  err -> liftIO $ printf "Error: %s\n" err
     Right res -> do
         liftIO $ printf "Saving resource: %s\n" (T.unpack res)
         storeProgramResource res
+    Left  err -> liftIO $ printf "Error: %s\n" err
   repl
 
 -- | List the patterns from the saved program.
 eval ListSelectedProgram = do
   result <- nodeListSelectedProgram
   case result of
-    Left err  -> liftIO $ printf "Error: %s\n" err
     Right res -> liftIO $ printf "Patterns: %s\n" (show res)
+    Left err  -> liftIO $ printf "Error: %s\n" err
   repl
 
 -- | List the programs available on the node.
 eval ListPrograms = do
   result <- nodeListPrograms
   case result of
-    Left err  -> liftIO $ printf "Error: %s\n" err
     Right res -> liftIO $ printf "Programs: %s\n" (show res)
+    Left err  -> liftIO $ printf "Error: %s\n" err
+  repl
+
+-- | Get the http configuration of the node.
+eval GetHttpConfig = do
+  result <- nodeGetHttpConfig
+  case result of
+    Right res -> liftIO $ printf "Http config: %s\n" (show res)
+    Left  err -> liftIO $ printf "Error: %s\n" err
+  repl
+
+-- | Set the http configuration of the node.
+eval (SetHttpConfig server port) = do
+  result <- nodeSetHttpConfig server port
+  case result of
+    Right () -> liftIO $ putStrLn "OK"
+    Left err -> liftIO $ printf "Error: %s\n" err
   repl
 
 -- | Print help information.
