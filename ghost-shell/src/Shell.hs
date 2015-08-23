@@ -19,8 +19,8 @@ import Control.Monad.State ( StateT
                            , modify'
                            )
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Text (Text)
 import GhostLang.API ( PatternInfo (..)
+                     , ProgramPath (..)
                      , Resource (..)
                      , Service (..)
                      , getHttpConfig
@@ -33,7 +33,7 @@ import Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
 import qualified Data.Text as T
 
 data Context = Context { nodeAddress  :: !String
-                       , progResource :: !(Maybe Text)
+                       , progResource :: !(Maybe Resource)
                        , manager      :: !Manager
                        }
 
@@ -56,17 +56,17 @@ nodeSetHttpConfig server port = do
   liftIO $ setHttpConfig mgr baseUrl $ Service { serviceAddress = server
                                                , servicePort    = port }
 
-nodeLoadProgram :: FilePath -> Shell (Either String Text)
+nodeLoadProgram :: FilePath -> Shell (Either String Resource)
 nodeLoadProgram filePath = do
   (mgr, baseUrl) <- nodeParams
-  liftIO $ loadProgram mgr baseUrl (T.pack filePath)
+  liftIO $ loadProgram mgr baseUrl ProgramPath { programPath = T.pack filePath }
 
 nodeListSelectedProgram :: Shell (Either String [PatternInfo])
 nodeListSelectedProgram = do
   maybeProg <- progResource <$> get
   maybe (return $ Left "No saved program") nodeListProgram' maybeProg
     where 
-      nodeListProgram' :: Text -> Shell (Either String [PatternInfo])
+      nodeListProgram' :: Resource -> Shell (Either String [PatternInfo])
       nodeListProgram' prog = do
           (mgr, baseUrl) <- nodeParams          
           liftIO $ listSelectedProgram mgr baseUrl prog
@@ -76,7 +76,7 @@ nodeListPrograms = do
   (mgr, baseUrl) <- nodeParams
   liftIO $ listPrograms mgr baseUrl
 
-storeProgramResource :: Text -> Shell ()
+storeProgramResource :: Resource -> Shell ()
 storeProgramResource res = modify' $ \s -> s { progResource = Just res }
 
 nodeParams :: Shell (Manager, String)

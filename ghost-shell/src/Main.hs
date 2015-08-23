@@ -17,7 +17,6 @@ import Shell ( Shell
 import System.Environment (getArgs)
 import System.IO (hFlush, stdout)
 import Text.Printf (printf)
-import qualified Data.Text as T
 
 main :: IO ()
 main = do
@@ -38,7 +37,7 @@ eval (LoadProgram path) = do
   result <- nodeLoadProgram path
   case result of
     Right res -> do
-        liftIO $ printf "Saving resource: %s\n" (T.unpack res)
+        liftIO $ printf "Saving resource: %s\n" (show res)
         storeProgramResource res
     Left  err -> liftIO $ printf "Error: %s\n" err
   repl

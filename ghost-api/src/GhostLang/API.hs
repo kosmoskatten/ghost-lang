@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 module GhostLang.API
-    ( LoadProgram (..)
+    ( ProgramPath (..)
     , PatternInfo (..)
     , Resource (..)
     , Service (..)
@@ -26,13 +26,12 @@ import Network.HTTP.Client ( Manager
                            , httpLbs
                            , parseUrl )
 import Network.HTTP.Types
-import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import qualified Data.Text as T
 
 -- | A data type that is describing the file path to the Main module
 -- for the program to be compiled and loaded.
-data LoadProgram = LoadProgram { filePath :: !Text }
+data ProgramPath = ProgramPath { programPath :: !Text }
     deriving (Generic, Show)
 
 -- | A data type that is describing the name and weight for a pattern.
@@ -51,8 +50,10 @@ data Service = Service { serviceAddress :: !String
                        }
     deriving (Generic, Show)
 
+type Server = String
+
 -- | Get the http configuration.
-getHttpConfig :: Manager -> String -> IO (Either String Service)
+getHttpConfig :: Manager -> Server -> IO (Either String Service)
 getHttpConfig mgr baseUrl = do
   result <- tryString $ do
       req <- mkGetRequest (baseUrl `mappend` httpConfigUrl)
@@ -64,7 +65,7 @@ getHttpConfig mgr baseUrl = do
     Left e                  -> return $ Left e
 
 -- | Set the http configuration.
-setHttpConfig :: Manager -> String -> Service -> IO (Either String ())
+setHttpConfig :: Manager -> Server -> Service -> IO (Either String ())
 setHttpConfig mgr baseUrl conf = do
   result <- tryString $ do
     req <- mkPutRequest (baseUrl `mappend` httpConfigUrl) conf
@@ -79,17 +80,14 @@ httpConfigUrl :: String
 httpConfigUrl = "/configuration/http"
 
 -- | Load a program on the remote node.
-loadProgram :: Manager -> String -> Text -> IO (Either String Text)
-loadProgram mgr baseUrl fp = do
-  let msg = LoadProgram { filePath = fp }
+loadProgram :: Manager -> Server -> ProgramPath -> IO (Either String Resource)
+loadProgram mgr baseUrl prog = do
   result <- tryString $ do
-      req <- mkPostRequest (baseUrl `mappend` loadProgramUrl) msg
+      req <- mkPostRequest (baseUrl `mappend` loadProgramUrl) prog
       serverTalk req mgr
   case result of
     Right (stat, body)
-        | stat == status201 -> do
-                let answer = resourceId $ strongDecode body
-                return $ Right answer
+        | stat == status201 -> return $ Right (strongDecode body)
         | otherwise         -> return $ Left (LBS.unpack body)
     Left e                  -> return $ Left e
 
@@ -98,10 +96,10 @@ loadProgramUrl :: String
 loadProgramUrl = "/program/load"
 
 -- | List the patterns for the selected program on the remote node.
-listSelectedProgram :: Manager -> String -> Text 
+listSelectedProgram :: Manager -> Server -> Resource 
                     -> IO (Either String [PatternInfo])
-listSelectedProgram mgr baseUrl resId = do
-  let url = baseUrl `mappend` (T.unpack resId) `mappend` "/list"
+listSelectedProgram mgr baseUrl res = do
+  let url = baseUrl `mappend` (T.unpack $ resourceId res) `mappend` "/list"
   result <- tryString $ do
       req <- mkGetRequest url
       serverTalk req mgr
@@ -112,7 +110,7 @@ listSelectedProgram mgr baseUrl resId = do
     Left e                  -> return $ Left e
 
 -- | List the resource urls for all loaded programs on the node.
-listPrograms :: Manager -> String -> IO (Either String [Resource])
+listPrograms :: Manager -> Server -> IO (Either String [Resource])
 listPrograms mgr baseUrl = do
   let url = baseUrl `mappend` listProgramsUrl
   result <- tryString $ do
@@ -175,12 +173,6 @@ serverTalk req mgr = do
 strongDecode :: FromJSON a => LBS.ByteString -> a
 strongDecode = fromJust . decode
 
--- | Check if the response headers having application/json as it's
--- content type.
-isContentJSON :: ResponseHeaders -> Bool
-isContentJSON xs = 
-    maybe False (== "application/json") $ lookup "Content-Type" xs
-
 -- | Evaluate an action, if it fails with an exception convert the
 -- exception to a string.
 tryString :: IO a -> IO (Either String a)
@@ -194,8 +186,8 @@ tryString act = do
       toString e = show e
 
 -- | Aeson instances.
-instance FromJSON LoadProgram
-instance ToJSON LoadProgram
+instance FromJSON ProgramPath
+instance ToJSON ProgramPath
 instance FromJSON PatternInfo
 instance ToJSON PatternInfo
 instance FromJSON Resource

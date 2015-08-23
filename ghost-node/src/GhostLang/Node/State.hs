@@ -27,7 +27,7 @@ import qualified Data.Map.Strict as Map
 
 -- | A representation of a compiled program.
 data ProgramRepr =
-    ProgramRepr { filePath_    :: !Text
+    ProgramRepr { programPath_ :: !Text
                 , resourceId_  :: !Text
                 , ghostProgram :: !GhostProgram
                 , patternList  :: ![PatternTuple]

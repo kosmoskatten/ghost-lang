@@ -7,7 +7,7 @@ import Data.ByteString (ByteString)
 import Data.Maybe (fromJust)
 import Data.Text (Text)
 import GhostLang (compileAndLink, toPatternList)
-import GhostLang.API ( LoadProgram (..)
+import GhostLang.API ( ProgramPath (..)
                      , PatternInfo (..)
                      , Resource (..)
                      , FromJSON
@@ -101,13 +101,13 @@ handleSetHttpConfig state request respond = do
 handleProgramLoad :: State -> Application
 handleProgramLoad state request respond = do
   msg    <- decodeBody request
-  result <- compileAndLink (T.unpack $ filePath msg)
+  result <- compileAndLink (T.unpack $ programPath msg)
   case result of
     Right prog -> do
         id' <- genId
         let resId    = "/program/" `mappend` id'
             answer   = Resource { resourceId = resId }
-            progRepr = ProgramRepr { filePath_    = filePath msg
+            progRepr = ProgramRepr { programPath_ = programPath msg
                                    , resourceId_  = resId
                                    , ghostProgram = prog
                                    , patternList  = toPatternList prog
