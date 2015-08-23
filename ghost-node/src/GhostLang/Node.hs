@@ -1,10 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 module GhostLang.Node
     ( runNode
     ) where
 
 import Data.ByteString (ByteString)
 import Data.Maybe (fromJust)
+import Data.Time (getCurrentTime)
 import Data.Text (Text)
 import GhostLang (compileAndLink, toPatternList)
 import GhostLang.API ( ProgramPath (..)
@@ -15,9 +17,9 @@ import GhostLang.API ( ProgramPath (..)
                      , encode
                      , decode' )
 import GhostLang.Node.IdGen (genId)
-import GhostLang.Node.State ( State
+import GhostLang.Node.State ( State (..)
                             , ProgramRepr (..)
-                            , emptyState
+                            , initState
                             , insertProgram
                             , lookupProgram
                             , allPrograms
@@ -26,6 +28,7 @@ import GhostLang.Node.State ( State
 import Network.HTTP.Types
 import Network.Wai
 import Network.Wai.Handler.Warp (run)
+import System.Log.FastLogger (ToLogStr (..), pushLogStrLn)
 import Text.Printf (printf)
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Lazy.Char8 as LBS
@@ -34,13 +37,16 @@ import qualified Data.Text as T
 -- | Start and run the ghost-node.
 runNode :: Int -> IO ()
 runNode port = do
-  state <- emptyState
+  state <- initState
+  logg state $ printf "Ghost Node listening on port %d" port
   run port $ router state
 
 -- | Route request to their handlers.
 router :: State -> Application
 router state request respond = do
-    printf "Req: %s\n" (show $ pathInfo request)
+    logg state $ printf "%s %s" (BS.unpack $ requestMethod request) 
+                                (BS.unpack $ rawPathInfo request)
+
     case pathInfo request of
       -- Request to read or set the http configuration.
       ["configuration", "http"]
@@ -152,4 +158,14 @@ textResponse status = responseLBS status [("Content-Type", "text/plain")]
 -- exception if the decoding is failing.
 decodeBody :: FromJSON a => Request -> IO a
 decodeBody req = fromJust . decode' <$> lazyRequestBody req
+
+-- | Output a line in the log. The line is prepended by the current time (UTC).
+logg :: State -> String -> IO ()
+logg State {..} str = do
+  now <- getCurrentTime
+  out $ show now `mappend` " : " `mappend` str
+    where
+      out :: String -> IO ()
+      out = pushLogStrLn logger . toLogStr
   
+

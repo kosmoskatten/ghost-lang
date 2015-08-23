@@ -21,12 +21,14 @@ executable ghost-node
                      , base64-string
                      , bytestring
                      , containers
+                     , fast-logger
                      , ghost-api
                      , ghost-lang
                      , http-types
                      , random
                      , stm
                      , text
+                     , time
                      , wai
                      , warp
   hs-source-dirs:      src

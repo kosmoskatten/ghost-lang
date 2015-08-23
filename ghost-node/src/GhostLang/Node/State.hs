@@ -1,9 +1,9 @@
 {-# LANGUAGE RecordWildCards #-}
 module GhostLang.Node.State
-    ( State
+    ( State (..)
     , ProgramRepr (..)
     , NetworkConfiguration (..)
-    , emptyState
+    , initState
     , insertProgram
     , lookupProgram
     , allPrograms
@@ -23,6 +23,11 @@ import GhostLang ( GhostProgram
                  , NetworkConfiguration (..)
                  , emptyNetworkConfiguration )
 import GhostLang.API (Service (..))
+import System.Log.FastLogger ( LoggerSet
+                             , defaultBufSize
+                             , newStdoutLoggerSet
+                             )
+
 import qualified Data.Map.Strict as Map
 
 -- | A representation of a compiled program.
@@ -39,12 +44,14 @@ type ProgramMap = Map.Map Text ProgramRepr
 
 -- | State for the ghost-node.
 data State = State { programMap  :: TVar ProgramMap
-                   , networkConf :: TVar NetworkConfiguration }
+                   , networkConf :: TVar NetworkConfiguration
+                   , logger      :: !LoggerSet }
 
--- | Create an empty state.
-emptyState :: IO State
-emptyState = State <$> newTVarIO Map.empty 
-                   <*> newTVarIO emptyNetworkConfiguration
+-- | Initialize the state.
+initState :: IO State
+initState = State <$> newTVarIO Map.empty 
+                  <*> newTVarIO emptyNetworkConfiguration
+                  <*> newStdoutLoggerSet defaultBufSize
 
 -- | Store a compiled ghost-program into the program map.
 insertProgram :: State -> Text -> ProgramRepr -> IO ()
