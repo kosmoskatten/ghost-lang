@@ -44,68 +44,77 @@ runNode port = do
 -- | Route request to their handlers.
 router :: State -> Application
 router state request respond = do
-    logg state $ printf "%s %s" (BS.unpack $ requestMethod request) 
-                                (BS.unpack $ rawPathInfo request)
+    response <-
+        case pathInfo request of
+          -- Request to read or set the http configuration.
+          ["configuration", "http"]
+            | requestMethod request == "GET"  -> 
+                handleReadHttpConfig state
+            | requestMethod request == "PUT" ->
+                handleSetHttpConfig state request
+            | otherwise                       -> 
+                handleNotAllowed ["GET", "PUT"]
+                                       
+          -- Route a request for compiling and loading a
+          -- ghost-program. Only POST request are accepted.
+          ["program", "load"]
+            | requestMethod request == "POST" -> 
+                handleProgramLoad state request
+            | otherwise                       -> 
+                handleNotAllowed ["POST"]
+                                       
+          -- Route a request for listing all the resource ids for the
+          -- programs loaded.
+          ["program", "list"]
+            | requestMethod request == "GET" ->
+                handleProgramList state
+            | otherwise                      ->
+                handleNotAllowed ["GET"]
+                                                                            
+          -- Route a request for listing all the patterns contained in a
+          -- selected compiled ghost-program. Only GET requests are
+          -- accepted.
+          ["program", resId, "list"]
+            | requestMethod request == "GET" ->
+                handleSelectedProgramList state resId
+            | otherwise                      ->
+                handleNotAllowed ["GET"]
+                                                             
+          -- No matching handler is found.
+          _ -> return notFound
 
-    case pathInfo request of
-      -- Request to read or set the http configuration.
-      ["configuration", "http"]
-          | requestMethod request == "GET"  -> 
-              handleReadHttpConfig state request respond
-          | requestMethod request == "PUT" ->
-              handleSetHttpConfig state request respond
-          | otherwise                       -> 
-              handleNotAllowed ["GET", "PUT"] request respond
+    
+    -- Logg the request and the response.
+    let status = responseStatus response
+    logg state $ printf "%s %s %d/%s" (BS.unpack $ requestMethod request) 
+                                      (BS.unpack $ rawPathInfo request)
+                                      (statusCode status)
+                                      (BS.unpack $ statusMessage status)
 
-      -- Route a request for compiling and loading a
-      -- ghost-program. Only POST request are accepted.
-      ["program", "load"]
-          | requestMethod request == "POST" -> 
-              handleProgramLoad state request respond
-          | otherwise                       -> 
-              handleNotAllowed ["POST"] request respond
-
-      -- Route a request for listing all the resource ids for the
-      -- programs loaded.
-      ["program", "list"]
-          | requestMethod request == "GET" ->
-              handleProgramList state request respond
-          | otherwise                      ->
-              handleNotAllowed ["GET"] request respond
-
-      -- Route a request for listing all the patterns contained in a
-      -- selected compiled ghost-program. Only GET requests are
-      -- accepted.
-      ["program", resId, "list"]
-          | requestMethod request == "GET" ->
-              handleSelectedProgramList state resId request respond
-          | otherwise                      ->
-              handleNotAllowed ["GET"] request respond
-
-      -- No matching handler is found.
-      _ -> notFound request respond
-
+    -- Respond back to Wai.
+    respond response
+                                            
 -- | Read the http configuration. Return the configuration as JSON
 -- with response code 200.
-handleReadHttpConfig :: State -> Application
-handleReadHttpConfig state _ respond = do
+handleReadHttpConfig :: State -> IO Response
+handleReadHttpConfig state = do
   answer <- getHttpConf state
-  respond $ jsonResponse status200 answer
+  return $ jsonResponse status200 answer
 
 -- | Set the http configuration carried in a Service record. Respond
 -- with an empty response code 200.
-handleSetHttpConfig :: State -> Application
-handleSetHttpConfig state request respond = do
+handleSetHttpConfig :: State -> Request -> IO Response
+handleSetHttpConfig state request = do
   msg <- decodeBody request
   setHttpConf state msg
-  respond $ textResponse status200 ""
+  return $ textResponse status200 ""
 
 -- | Handle the request of compiling and loading a ghost-program. If
 -- the compilation is successful, the compiled program is stored and a
 -- response code 201 carrying a JSON with the resource id is
 -- returned. Otherwise an error with code 409 is returned.
-handleProgramLoad :: State -> Application
-handleProgramLoad state request respond = do
+handleProgramLoad :: State -> Request -> IO Response
+handleProgramLoad state request = do
   msg    <- decodeBody request
   result <- compileAndLink (T.unpack $ programPath msg)
   case result of
@@ -119,33 +128,33 @@ handleProgramLoad state request respond = do
                                    , patternList  = toPatternList prog
                                    }
         insertProgram state id' progRepr
-        respond $ jsonResponse status201 answer
+        return $ jsonResponse status201 answer
     Left err   ->
-        respond $ textResponse status409 $ LBS.pack err
+        return $ textResponse status409 $ LBS.pack err
 
 -- | List the resource ids for all loaded programs.
-handleProgramList :: State -> Application
-handleProgramList state _ respond = do
+handleProgramList :: State -> IO Response
+handleProgramList state = do
   progs <- allPrograms state
   let answer = map (Resource . resourceId_) progs
-  respond $ jsonResponse status200 answer
+  return $ jsonResponse status200 answer
 
 -- | List the patterns for the selected program.
-handleSelectedProgramList :: State -> Text -> Application
-handleSelectedProgramList state resId request respond = do
+handleSelectedProgramList :: State -> Text -> IO Response
+handleSelectedProgramList state resId = do
   maybeProgram <- lookupProgram state resId
   case maybeProgram of
     Just prog -> do
       let answer = map (\(l, w, _) -> PatternInfo l w) $ patternList prog
-      respond $ jsonResponse status200 answer
-    Nothing   -> notFound request respond
+      return $ jsonResponse status200 answer
+    Nothing   -> return notFound
   
-handleNotAllowed :: [ByteString] -> Application
-handleNotAllowed allow _ respond = 
-    respond $ responseLBS status405 [("Allow", "," `BS.intercalate` allow)] ""
+handleNotAllowed :: [ByteString] -> IO Response
+handleNotAllowed allow = 
+    return $ responseLBS status405 [("Allow", "," `BS.intercalate` allow)] ""
 
-notFound :: Application
-notFound _ respond = respond $ textResponse status404 "Resource Not Found"
+notFound :: Response
+notFound = textResponse status404 "Resource Not Found"
 
 jsonResponse :: ToJSON a => Status -> a -> Response
 jsonResponse status = 
