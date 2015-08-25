@@ -5,6 +5,8 @@ module GhostLang.API
     , PatternInfo (..)
     , Resource (..)
     , Service (..)
+    , ExecParams (..)
+    , NamedPattern (..)
     , getHttpConfig
     , setHttpConfig
     , loadProgram
@@ -48,6 +50,19 @@ data Resource = Resource { resourceId :: !Text }
 data Service = Service { serviceAddress :: !String
                        , servicePort    :: !Int
                        }
+    deriving (Generic, Show)
+
+-- | A data type that is describing pattern execution parameters.
+data ExecParams = ExecParams { shallTrace     :: !Bool
+                             , srcIp          :: !(Maybe String)
+                             }
+    deriving (Generic, Show)
+
+-- | A data type that is describing the particulars for execution of a
+-- named pattern.
+data NamedPattern = NamedPattern { execPattern :: !Text
+                                 , execParams  :: !ExecParams
+                                 }
     deriving (Generic, Show)
 
 type Server = String
@@ -194,3 +209,7 @@ instance FromJSON Resource
 instance ToJSON Resource
 instance FromJSON Service
 instance ToJSON Service
+instance FromJSON ExecParams
+instance ToJSON ExecParams
+instance FromJSON NamedPattern
+instance ToJSON NamedPattern

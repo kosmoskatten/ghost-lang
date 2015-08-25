@@ -79,6 +79,14 @@ router state request respond = do
                 handleSelectedProgramList state resId
             | otherwise                      ->
                 handleNotAllowed ["GET"]
+
+           -- Route a request for running a named pattern from the
+           -- selected ghost-program. Only POST requests are accepted.
+          ["program", resId, "named-pattern"]
+            | requestMethod request == "POST" ->
+                handleNamedPatternRun state request resId
+            | otherwise                       ->
+                handleNotAllowed ["POST"]
                                                              
           -- No matching handler is found.
           _ -> return notFound
@@ -132,14 +140,16 @@ handleProgramLoad state request = do
     Left err   ->
         return $ textResponse status409 $ LBS.pack err
 
--- | List the resource ids for all loaded programs.
+-- | List the resource ids for all loaded programs. Always 200 as
+-- response.
 handleProgramList :: State -> IO Response
 handleProgramList state = do
   progs <- allPrograms state
   let answer = map (Resource . resourceId_) progs
   return $ jsonResponse status200 answer
 
--- | List the patterns for the selected program.
+-- | List the patterns for the selected program. The response code is
+-- 200 if the program is found, otherwise 404.
 handleSelectedProgramList :: State -> Text -> IO Response
 handleSelectedProgramList state resId = do
   maybeProgram <- lookupProgram state resId
@@ -149,6 +159,12 @@ handleSelectedProgramList state resId = do
       return $ jsonResponse status200 answer
     Nothing   -> return notFound
   
+-- | Run a named pattern from the selected program. If the pattern is
+-- found a response code 201 is returned. If the pattern is not found
+-- 409 is returned, if the program not is found 404 is returned.
+handleNamedPatternRun :: State -> Request -> Text -> IO Response
+handleNamedPatternRun = undefined
+
 handleNotAllowed :: [ByteString] -> IO Response
 handleNotAllowed allow = 
     return $ responseLBS status405 [("Allow", "," `BS.intercalate` allow)] ""
