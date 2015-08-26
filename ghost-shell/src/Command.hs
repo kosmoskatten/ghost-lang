@@ -15,6 +15,9 @@ data Command where
     ListPrograms        :: Command
     GetHttpConfig       :: Command
     SetHttpConfig       :: !String -> !Int -> Command
+    RunNamedPattern     :: !String -> !Bool -> !(Maybe String) -> Command
+
+
     Status              :: Command
     RunPattern          :: !String -> !Mode -> Command
     Help                :: Command
@@ -112,3 +115,16 @@ mode = string "mode" >> spaces >> char '=' >> spaces >> mode'
     where mode' = string "normal" *> pure Normal
               <|> string "trace"  *> pure Trace
               <|> string "dry"    *> pure Dry
+
+ipAddress :: Parser String
+ipAddress = concat <$> sequence [ ipSeg, string "."
+                                , ipSeg, string "."
+                                , ipSeg, string "."
+                                , ipSeg ] 
+
+ipSeg :: Parser String
+ipSeg = do
+  seg <- many1 $ oneOf ['0'..'9']
+  let segInt = read seg :: Int
+  if (segInt >= 0 && segInt < 256) then return seg
+  else parserFail "IP segment must be [0 - 255]"

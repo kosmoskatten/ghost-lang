@@ -12,6 +12,7 @@ module GhostLang.API
     , loadProgram
     , listSelectedProgram
     , listPrograms
+    , runNamedPattern
     , module Data.Aeson
     ) where
 
@@ -140,6 +141,22 @@ listPrograms mgr baseUrl = do
 -- | Url to the resource of which a program list can be issued.
 listProgramsUrl :: String
 listProgramsUrl = "/program/list"
+
+-- | Run a named pattern from the program described by the
+-- resource. If successful a resource to the pattern is returned.
+runNamedPattern :: Manager -> Server -> Resource 
+                -> NamedPattern -> IO (Either String Resource)
+runNamedPattern mgr baseUrl res pattern = do
+  let url = baseUrl `mappend` (T.unpack $ resourceId res) 
+                    `mappend` "/named-pattern"
+  result <- tryString $ do
+      req <- mkPostRequest url pattern
+      serverTalk req mgr
+  case result of
+    Right (stat, body)
+        | stat == status201 -> return $ Right (strongDecode body)
+        | otherwise         -> return $ Left (LBS.unpack body)
+    Left e                  -> return $ Left e
 
 -- | Make a POST request carrying a JSON object and expecting a JSON
 -- object as response. Can throw exception if the url is malformed.
