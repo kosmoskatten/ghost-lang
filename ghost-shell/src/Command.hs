@@ -71,6 +71,12 @@ setHttpConfig = do
   spaces >> eof
   return $ SetHttpConfig server' port'
 
+runNamedPattern :: Parser Command
+runNamedPattern = do
+  string "run-named-pattern" >> spaces
+  RunNamedPattern <$> pattern
+                  <*> (spaces *> trace)
+                  <*> (spaces *> (maybeSrcIp <* (spaces >> eof)))
 
 status :: Parser Command
 status = string "status" >> spaces >> eof >> pure Status
@@ -115,6 +121,18 @@ mode = string "mode" >> spaces >> char '=' >> spaces >> mode'
     where mode' = string "normal" *> pure Normal
               <|> string "trace"  *> pure Trace
               <|> string "dry"    *> pure Dry
+
+trace :: Parser Bool
+trace = string "trace" >> spaces >> string "=" >> spaces >> bool
+
+bool :: Parser Bool
+bool = string "true" *> pure True <|> string "false" *> pure False
+
+maybeSrcIp :: Parser (Maybe String)
+maybeSrcIp = try (Just <$> srcIp) <|> pure Nothing
+
+srcIp :: Parser String
+srcIp = string "src" >> spaces >> string "=" >> spaces >> ipAddress
 
 ipAddress :: Parser String
 ipAddress = concat <$> sequence [ ipSeg, string "."
