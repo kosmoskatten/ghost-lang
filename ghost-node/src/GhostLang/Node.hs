@@ -5,6 +5,7 @@ module GhostLang.Node
     ) where
 
 import Data.ByteString (ByteString)
+import Data.List (find)
 import Data.Maybe (fromJust)
 import Data.Time (getCurrentTime)
 import Data.Text (Text)
@@ -12,6 +13,8 @@ import GhostLang (compileAndLink, toPatternList)
 import GhostLang.API ( ProgramPath (..)
                      , PatternInfo (..)
                      , Resource (..)
+                     , NamedPattern (..)
+                     , ExecParams (..)
                      , FromJSON
                      , ToJSON
                      , encode
@@ -163,7 +166,19 @@ handleSelectedProgramList state resId = do
 -- found a response code 201 is returned. If the pattern is not found
 -- 409 is returned, if the program not is found 404 is returned.
 handleNamedPatternRun :: State -> Request -> Text -> IO Response
-handleNamedPatternRun = undefined
+handleNamedPatternRun state request resId = do
+  maybeProgram <- lookupProgram state resId
+  case maybeProgram of
+    Just prog -> do
+      msg <- decodeBody request
+      case find (\(l, _, _) -> l == execPattern msg) $ patternList prog of
+        Just (_, _, p) -> do
+            id' <- genId            
+            let patternId = "/pattern/" `mappend` id'
+                answer    = Resource { resourceId = patternId }
+            return $ jsonResponse status201 answer
+        Nothing        -> return $ textResponse status409 "Pattern not found"
+    Nothing  -> return notFound
 
 handleNotAllowed :: [ByteString] -> IO Response
 handleNotAllowed allow = 
