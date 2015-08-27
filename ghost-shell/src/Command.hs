@@ -4,7 +4,7 @@ module Command
     , parseCommand
     ) where
 
-import GhostLang (Mode (..))
+import Control.Monad (void)
 import Text.Parsec
 import Text.Parsec.String (Parser)
 
@@ -16,10 +16,6 @@ data Command where
     GetHttpConfig       :: Command
     SetHttpConfig       :: !String -> !Int -> Command
     RunNamedPattern     :: !String -> !Bool -> !(Maybe String) -> Command
-
-
-    Status              :: Command
-    RunPattern          :: !String -> !Mode -> Command
     Help                :: Command
     Quit                :: Command
     EmptyLine           :: Command
@@ -40,56 +36,37 @@ aCommand = spaces *> ( try loadProgram
                    <|> try getHttpConfig
                    <|> try setHttpConfig
                    <|> try runNamedPattern
-                   <|> try status
-                   <|> try runPattern
                    <|> try help 
                    <|> try quit 
                    <|> emptyLine )
 
 loadProgram :: Parser Command
 loadProgram = do
-  string "load-program" >> spaces
-  path' <- path
-  spaces >> eof
-  return $ LoadProgram path'
+  keyword "load-program"
+  LoadProgram <$> ((spaces *> path) <* (spaces >> eof))
 
 listSelectedProgram :: Parser Command
 listSelectedProgram = 
-    string "list-selected-program" >> spaces >> eof >> pure ListSelectedProgram
+    keyword "list-selected-program" >> spaces >> eof >> pure ListSelectedProgram
 
 listPrograms :: Parser Command
-listPrograms = string "list-programs" >> spaces >> eof >> pure ListPrograms
+listPrograms = keyword "list-programs" >> spaces >> eof >> pure ListPrograms
 
 getHttpConfig :: Parser Command
-getHttpConfig = string "get-http-config" >> spaces >> eof >> pure GetHttpConfig
+getHttpConfig = keyword "get-http-config" >> spaces >> eof >> pure GetHttpConfig
 
 setHttpConfig :: Parser Command
 setHttpConfig = do
-  string "set-http-config" >> spaces
-  server' <- server
-  spaces
-  port' <- port
-  spaces >> eof
-  return $ SetHttpConfig server' port'
+  keyword "set-http-config"
+  SetHttpConfig <$> (spaces *> server)
+                <*> ((spaces *> port) <* (spaces >> eof))
 
 runNamedPattern :: Parser Command
 runNamedPattern = do
-  string "run-named-pattern" >> spaces
-  RunNamedPattern <$> pattern
+  keyword "run-named-pattern"
+  RunNamedPattern <$> (spaces *> pattern)
                   <*> (spaces *> trace)
-                  <*> (spaces *> (maybeSrcIp <* (spaces >> eof)))
-
-status :: Parser Command
-status = string "status" >> spaces >> eof >> pure Status
-
-runPattern :: Parser Command
-runPattern = do
-  string "run-pattern" >> spaces
-  pattern' <- pattern
-  spaces
-  mode' <- mode
-  spaces >> eof
-  return $ RunPattern pattern' mode'
+                  <*> ((spaces *> maybeSrcIp) <* (spaces >> eof))
 
 help :: Parser Command
 help = string "help" >> spaces >> eof >> pure Help
@@ -117,12 +94,6 @@ server = (:) <$> oneOf startChar <*> many (oneOf followChar)
 port :: Parser Int
 port = read <$> many1 digit
   
-mode :: Parser Mode
-mode = string "mode" >> spaces >> char '=' >> spaces >> mode'
-    where mode' = string "normal" *> pure Normal
-              <|> string "trace"  *> pure Trace
-              <|> string "dry"    *> pure Dry
-
 trace :: Parser Bool
 trace = string "trace" >> spaces >> string "=" >> spaces >> bool
 
@@ -143,7 +114,10 @@ ipAddress = concat <$> sequence [ ipSeg, string "."
 
 ipSeg :: Parser String
 ipSeg = do
-  seg <- many1 $ oneOf ['0'..'9']
+  seg <- many1 digit
   let segInt = read seg :: Int
   if (segInt >= 0 && segInt < 256) then return seg
   else parserFail "IP segment must be [0 - 255]"
+
+keyword :: String -> Parser ()
+keyword = void . string
