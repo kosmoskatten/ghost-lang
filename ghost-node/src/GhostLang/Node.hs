@@ -21,6 +21,7 @@ import GhostLang.API ( ProgramPath (..)
                      , decode' )
 import GhostLang.Node.Flow ( getHttpConfig
                            , setHttpConfig
+                           , listPrograms
                            )
 import GhostLang.Node.IdGen (genId)
 import GhostLang.Node.State ( State (..)
@@ -28,7 +29,6 @@ import GhostLang.Node.State ( State (..)
                             , initState
                             , insertProgram
                             , lookupProgram
-                            , allPrograms
                             )
 import Network.HTTP.Types
 import Network.Wai
@@ -145,10 +145,7 @@ handleProgramLoad state request = do
 -- | List the resource ids for all loaded programs. Always 200 as
 -- response.
 handleProgramList :: State -> IO Response
-handleProgramList state = do
-  progs <- allPrograms state
-  let answer = map (Resource . resourceId_) progs
-  return $ jsonResponse status200 answer
+handleProgramList state = jsonResponse status200 <$> listPrograms state
 
 -- | List the patterns for the selected program. The response code is
 -- 200 if the program is found, otherwise 404.

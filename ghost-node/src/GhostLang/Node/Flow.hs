@@ -2,17 +2,17 @@
 module GhostLang.Node.Flow
     ( getHttpConfig
     , setHttpConfig
+    , listPrograms
     ) where
 
-import Control.Concurrent.STM ( TVar
-                              , atomically
-                              , newTVarIO
-                              , modifyTVar'
-                              , readTVarIO
-                              )
-import GhostLang.API (Service (..))
+import Control.Concurrent.STM (readTVarIO)
+import GhostLang.API ( Resource (..)
+                     , Service (..)
+                     )
 import GhostLang.Node.State ( State (..)
+                            , ProgramRepr (..)
                             , NetworkConfiguration (..)
+                            , allPrograms
                             , modifyTVar'IO
                             )
 -- | Get the current http configuration.
@@ -28,3 +28,7 @@ setHttpConfig State {..} Service {..} =
     modifyTVar'IO networkConf $ \nw -> 
         nw { httpServiceAddress = serviceAddress
            , httpServicePort    = servicePort }
+
+-- | List all registered programs.
+listPrograms :: State -> IO [Resource]
+listPrograms state = map (Resource . resourceId_) <$> allPrograms state
