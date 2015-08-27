@@ -10,8 +10,7 @@ module GhostLang.Node.State
     , insertPattern
     , lookupPattern
     , allPrograms
-    , getHttpConf
-    , setHttpConf
+    , modifyTVar'IO
     ) where
 
 import Control.Concurrent.STM ( TVar
@@ -25,7 +24,6 @@ import GhostLang ( GhostProgram
                  , PatternTuple
                  , NetworkConfiguration (..)
                  , emptyNetworkConfiguration )
-import GhostLang.API (Service (..))
 import System.Log.FastLogger ( LoggerSet
                              , defaultBufSize
                              , newStdoutLoggerSet
@@ -87,19 +85,6 @@ insertPattern State {..} resId pattern =
 -- | Lookup a pattern instance from the pattern map.
 lookupPattern :: State -> Text -> IO (Maybe PatternRepr)
 lookupPattern State {..} resId = Map.lookup resId <$> readTVarIO patternMap
-
--- | Get the current http configuration.
-getHttpConf :: State -> IO Service
-getHttpConf state = do
-  nw <- readTVarIO $ networkConf state
-  return $ Service { serviceAddress = httpServiceAddress nw
-                   , servicePort    = httpServicePort nw }
-
--- | Set the http configuration.
-setHttpConf :: State -> Service -> IO ()
-setHttpConf State {..} Service {..} = 
-    modifyTVar'IO networkConf $ \nw -> nw { httpServiceAddress = serviceAddress
-                                          , httpServicePort    = servicePort }
 
 modifyTVar'IO :: TVar a -> (a -> a) -> IO ()
 modifyTVar'IO tvar g = atomically $ modifyTVar' tvar g

@@ -19,6 +19,9 @@ import GhostLang.API ( ProgramPath (..)
                      , ToJSON
                      , encode
                      , decode' )
+import GhostLang.Node.Flow ( getHttpConfig
+                           , setHttpConfig
+                           )
 import GhostLang.Node.IdGen (genId)
 import GhostLang.Node.State ( State (..)
                             , ProgramRepr (..)
@@ -26,8 +29,7 @@ import GhostLang.Node.State ( State (..)
                             , insertProgram
                             , lookupProgram
                             , allPrograms
-                            , getHttpConf
-                            , setHttpConf )
+                            )
 import Network.HTTP.Types
 import Network.Wai
 import Network.Wai.Handler.Warp (run)
@@ -52,7 +54,7 @@ router state request respond = do
           -- Request to read or set the http configuration.
           ["configuration", "http"]
             | requestMethod request == "GET"  -> 
-                handleReadHttpConfig state
+                handleGetHttpConfig state
             | requestMethod request == "PUT" ->
                 handleSetHttpConfig state request
             | otherwise                       -> 
@@ -105,19 +107,16 @@ router state request respond = do
     -- Respond back to Wai.
     respond response
                                             
--- | Read the http configuration. Return the configuration as JSON
+-- | Get the http configuration. Return the configuration as JSON
 -- with response code 200.
-handleReadHttpConfig :: State -> IO Response
-handleReadHttpConfig state = do
-  answer <- getHttpConf state
-  return $ jsonResponse status200 answer
+handleGetHttpConfig :: State -> IO Response
+handleGetHttpConfig state = jsonResponse status200 <$> getHttpConfig state
 
 -- | Set the http configuration carried in a Service record. Respond
 -- with an empty response code 200.
 handleSetHttpConfig :: State -> Request -> IO Response
 handleSetHttpConfig state request = do
-  msg <- decodeBody request
-  setHttpConf state msg
+  setHttpConfig state =<< decodeBody request
   return $ textResponse status200 ""
 
 -- | Handle the request of compiling and loading a ghost-program. If
