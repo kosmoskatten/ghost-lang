@@ -35,36 +35,36 @@ import qualified Data.Text as T
 -- | A data type that is describing the file path to the Main module
 -- for the program to be compiled and loaded.
 data ProgramPath = ProgramPath { programPath :: !Text }
-    deriving (Generic, Show)
+    deriving (Eq, Generic, Show)
 
 -- | A data type that is describing the name and weight for a pattern.
 data PatternInfo = PatternInfo { patternName   :: !Text
                                , patternWeight :: !Int64
                                }
-    deriving (Generic, Show)
+    deriving (Eq, Generic, Show)
 
 -- | A data type that is describing a resource id (url).
 data Resource = Resource { resourceId :: !Text }
-    deriving (Generic, Show)
+    deriving (Eq, Generic, Show)
 
 -- | A data type that is describing a remote service.
 data Service = Service { serviceAddress :: !String
                        , servicePort    :: !Int
                        }
-    deriving (Generic, Show)
+    deriving (Eq, Generic, Show)
 
 -- | A data type that is describing pattern execution parameters.
 data ExecParams = ExecParams { shallTrace     :: !Bool
                              , srcIp          :: !(Maybe String)
                              }
-    deriving (Generic, Show)
+    deriving (Eq, Generic, Show)
 
 -- | A data type that is describing the particulars for execution of a
 -- named pattern.
 data NamedPattern = NamedPattern { execPattern :: !Text
                                  , execParams  :: !ExecParams
                                  }
-    deriving (Generic, Show)
+    deriving (Eq, Generic, Show)
 
 type Server = String
 
