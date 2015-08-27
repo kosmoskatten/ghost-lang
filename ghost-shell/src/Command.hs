@@ -39,6 +39,7 @@ aCommand = spaces *> ( try loadProgram
                    <|> try listPrograms
                    <|> try getHttpConfig
                    <|> try setHttpConfig
+                   <|> try runNamedPattern
                    <|> try status
                    <|> try runPattern
                    <|> try help 

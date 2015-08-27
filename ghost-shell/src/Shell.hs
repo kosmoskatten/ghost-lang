@@ -8,6 +8,7 @@ module Shell
     , nodeLoadProgram
     , nodeListSelectedProgram
     , nodeListPrograms
+    , nodeRunNamedPattern
     , storeProgramResource
     , liftIO
     ) where
@@ -23,11 +24,14 @@ import GhostLang.API ( PatternInfo (..)
                      , ProgramPath (..)
                      , Resource (..)
                      , Service (..)
+                     , NamedPattern (..)
+                     , ExecParams (..)
                      , getHttpConfig
                      , setHttpConfig
                      , loadProgram
                      , listSelectedProgram
                      , listPrograms
+                     , runNamedPattern
                      )
 import Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
 import qualified Data.Text as T
@@ -75,6 +79,22 @@ nodeListPrograms :: Shell (Either String [Resource])
 nodeListPrograms = do
   (mgr, baseUrl) <- nodeParams
   liftIO $ listPrograms mgr baseUrl
+
+nodeRunNamedPattern :: String -> Bool -> Maybe String 
+                    -> Shell (Either String Resource)
+nodeRunNamedPattern name trace src = do
+  maybeProg <- progResource <$> get
+  maybe (return $ Left "No saved program") nodeRunNamedPattern' maybeProg
+    where
+      nodeRunNamedPattern' :: Resource -> Shell (Either String Resource)
+      nodeRunNamedPattern' prog = do
+          let namedPattern = 
+                  NamedPattern { execPattern = T.pack name
+                               , execParams  = ExecParams { shallTrace = trace
+                                                          , srcIp      = src }
+                               }
+          (mgr, baseUrl) <- nodeParams
+          liftIO $ runNamedPattern mgr baseUrl prog namedPattern
 
 storeProgramResource :: Resource -> Shell ()
 storeProgramResource res = modify' $ \s -> s { progResource = Just res }
