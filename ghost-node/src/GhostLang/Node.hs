@@ -11,7 +11,6 @@ import Data.ByteString (ByteString)
 import Data.List (find)
 import Data.Maybe (fromJust)
 import Data.Time (getCurrentTime)
-import Data.Text (Text)
 import GhostLang.API ( ProgramPath (..)
                      , PatternInfo (..)
                      , Resource (..)
@@ -41,75 +40,64 @@ import System.Log.FastLogger (ToLogStr (..), pushLogStrLn)
 import Text.Printf (printf)
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Lazy.Char8 as LBS
-import qualified Data.Text as T
 
 -- | Start and run the ghost-node.
 runNode :: Int -> IO ()
 runNode port = do
   state <- initState
   logg state $ printf "Ghost Node listening on port %d" port
-  run port $ router state
+  run port $ application state
 
--- | Route request to their handlers.
-router :: State -> Application
-router state request respond = do
-    response <-
-        case pathInfo request of
-          -- Request to read or set the http configuration.
-          ["configuration", "http"]
-            | requestMethod request == "GET"  -> 
-                handleGetHttpConfig state
-            | requestMethod request == "PUT" ->
-                handleSetHttpConfig state request
-            | otherwise                       -> 
-                handleNotAllowed ["GET", "PUT"]
+-- | Application entry per request
+application :: State -> Application
+application state request respond = do
+    response <- route state request
+    let status = responseStatus response
+    logg state $ 
+         printf "%s %s %d/%s" (BS.unpack $ requestMethod request) 
+                              (BS.unpack $ rawPathInfo request)
+                              (statusCode status)
+                              (BS.unpack $ statusMessage status)
+
+    respond response
+
+-- | Route the request to the correct handler.
+route :: State -> Request -> IO Response
+route state req =
+   case pathInfo req of
+     -- Request to read or set the http configuration.
+     ["configuration", "http"]
+       | requestMethod req == "GET" -> handleGetHttpConfig state
+       | requestMethod req == "PUT" -> handleSetHttpConfig state req
+       | otherwise                  -> handleNotAllowed ["GET", "PUT"]
                                        
-          -- Route a request for compiling and loading a
-          -- ghost-program. Only POST request are accepted.
-          ["program", "load"]
-            | requestMethod request == "POST" -> 
-                handleProgramLoad state request
-            | otherwise                       -> 
-                handleNotAllowed ["POST"]
+     -- Route a request for compiling and loading a
+     -- ghost-program. Only POST request are accepted.
+     ["program", "load"]
+       | requestMethod req == "POST" -> handleProgramLoad state req
+       | otherwise                   -> handleNotAllowed ["POST"]
                                        
-          -- Route a request for listing all the resource ids for the
-          -- programs loaded.
-          ["program", "list"]
-            | requestMethod request == "GET" ->
-                handleProgramList state
-            | otherwise                      ->
-                handleNotAllowed ["GET"]
+     -- Route a request for listing all the resource ids for the
+     -- programs loaded.
+     ["program", "list"]
+       | requestMethod req == "GET" -> handleProgramList state
+       | otherwise                  -> handleNotAllowed ["GET"]
                                                                             
-          -- Route a request for listing all the patterns contained in a
-          -- selected compiled ghost-program. Only GET requests are
-          -- accepted.
-          ["program", key, "list"]
-            | requestMethod request == "GET" ->
-                handleSelectedProgramList state key
-            | otherwise                      ->
-                handleNotAllowed ["GET"]
+     -- Route a request for listing all the patterns contained in a
+     -- selected compiled ghost-program. Only GET requests are
+     -- accepted.
+     ["program", key, "list"]
+       | requestMethod req == "GET" -> handleSelectedProgramList state key
+       | otherwise                  -> handleNotAllowed ["GET"]
 
            -- Route a request for running a named pattern from the
            -- selected ghost-program. Only POST requests are accepted.
-          ["program", key, "named-pattern"]
-            | requestMethod request == "POST" ->
-                handleNamedPatternRun state request key
-            | otherwise                       ->
-                handleNotAllowed ["POST"]
+     ["program", key, "named-pattern"]
+       | requestMethod req == "POST" -> handleNamedPatternRun state req key
+       | otherwise                   -> handleNotAllowed ["POST"]
                                                              
-          -- No matching handler is found.
-          _ -> return notFound
-
-    
-    -- Logg the request and the response.
-    let status = responseStatus response
-    logg state $ printf "%s %s %d/%s" (BS.unpack $ requestMethod request) 
-                                      (BS.unpack $ rawPathInfo request)
-                                      (statusCode status)
-                                      (BS.unpack $ statusMessage status)
-
-    -- Respond back to Wai.
-    respond response
+     -- No matching handler is found.
+     _ -> return notFound
                                             
 -- | Get the http configuration. Return the configuration as JSON
 -- with response code 200.
