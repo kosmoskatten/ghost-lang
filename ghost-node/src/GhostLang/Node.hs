@@ -1,5 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
+-- | The GhostLang.Node module is implementing most of the HTTP
+-- related stuff. E.g. routing, handling of responses and
+-- encoding/decoding.
 module GhostLang.Node
     ( runNode
     ) where
@@ -9,7 +12,6 @@ import Data.List (find)
 import Data.Maybe (fromJust)
 import Data.Time (getCurrentTime)
 import Data.Text (Text)
-import GhostLang (compileAndLink, toPatternList)
 import GhostLang.API ( ProgramPath (..)
                      , PatternInfo (..)
                      , Resource (..)
@@ -22,12 +24,14 @@ import GhostLang.API ( ProgramPath (..)
 import GhostLang.Node.Flow ( getHttpConfig
                            , setHttpConfig
                            , listPrograms
+                           , listPatternsFromProgram
+                           , loadProgram
                            )
 import GhostLang.Node.IdGen (genId)
 import GhostLang.Node.State ( State (..)
+                            , ResourceKey
                             , ProgramRepr (..)
                             , initState
-                            , insertProgram
                             , lookupProgram
                             )
 import Network.HTTP.Types
@@ -79,17 +83,17 @@ router state request respond = do
           -- Route a request for listing all the patterns contained in a
           -- selected compiled ghost-program. Only GET requests are
           -- accepted.
-          ["program", resId, "list"]
+          ["program", key, "list"]
             | requestMethod request == "GET" ->
-                handleSelectedProgramList state resId
+                handleSelectedProgramList state key
             | otherwise                      ->
                 handleNotAllowed ["GET"]
 
            -- Route a request for running a named pattern from the
            -- selected ghost-program. Only POST requests are accepted.
-          ["program", resId, "named-pattern"]
+          ["program", key, "named-pattern"]
             | requestMethod request == "POST" ->
-                handleNamedPatternRun state request resId
+                handleNamedPatternRun state request key
             | otherwise                       ->
                 handleNotAllowed ["POST"]
                                                              
@@ -125,22 +129,10 @@ handleSetHttpConfig state request = do
 -- returned. Otherwise an error with code 409 is returned.
 handleProgramLoad :: State -> Request -> IO Response
 handleProgramLoad state request = do
-  msg    <- decodeBody request
-  result <- compileAndLink (T.unpack $ programPath msg)
+  result <- loadProgram state =<< decodeBody request
   case result of
-    Right prog -> do
-        id' <- genId
-        let resId    = "/program/" `mappend` id'
-            answer   = Resource { resourceId = resId }
-            progRepr = ProgramRepr { programPath_ = programPath msg
-                                   , resourceId_  = resId
-                                   , ghostProgram = prog
-                                   , patternList  = toPatternList prog
-                                   }
-        insertProgram state id' progRepr
-        return $ jsonResponse status201 answer
-    Left err   ->
-        return $ textResponse status409 $ LBS.pack err
+    Right answer -> return $ jsonResponse status201 answer
+    Left err     -> return $ textResponse status409 (LBS.pack err)
 
 -- | List the resource ids for all loaded programs. Always 200 as
 -- response.
@@ -149,19 +141,15 @@ handleProgramList state = jsonResponse status200 <$> listPrograms state
 
 -- | List the patterns for the selected program. The response code is
 -- 200 if the program is found, otherwise 404.
-handleSelectedProgramList :: State -> Text -> IO Response
-handleSelectedProgramList state resId = do
-  maybeProgram <- lookupProgram state resId
-  case maybeProgram of
-    Just prog -> do
-      let answer = map (\(l, w, _) -> PatternInfo l w) $ patternList prog
-      return $ jsonResponse status200 answer
-    Nothing   -> return notFound
-  
+handleSelectedProgramList :: State -> ResourceKey -> IO Response
+handleSelectedProgramList state key =
+    maybe notFound (jsonResponse status200) 
+          <$> listPatternsFromProgram state key
+
 -- | Run a named pattern from the selected program. If the pattern is
 -- found a response code 201 is returned. If the pattern is not found
 -- 409 is returned, if the program not is found 404 is returned.
-handleNamedPatternRun :: State -> Request -> Text -> IO Response
+handleNamedPatternRun :: State -> Request -> ResourceKey -> IO Response
 handleNamedPatternRun state request resId = do
   maybeProgram <- lookupProgram state resId
   case maybeProgram of

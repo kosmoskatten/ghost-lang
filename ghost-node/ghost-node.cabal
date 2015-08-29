@@ -38,12 +38,19 @@ executable ghost-node
 test-suite ghost-node-test
   type:                exitcode-stdio-1.0
   main-is:             Spec.hs
+  other-modules:       GhostLang.FlowTests
+                       GhostLang.Node.Flow
+                       GhostLang.Node.State
+                       GhostLang.Node.IdGen
   build-depends:       base >= 4 && <5
                      , containers
+                     , directory
                      , fast-logger
+                     , filepath
                      , ghost-api
                      , ghost-lang
                      , HUnit
+                     , random
                      , stm
                      , test-framework
                      , test-framework-hunit
