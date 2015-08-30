@@ -37,7 +37,7 @@ type ResourceKey = Text
 -- | A representation of a compiled program.
 data ProgramRepr =
     ProgramRepr { programPath_ :: !Text
-                , resourceId_  :: !Text
+                , programUrl   :: !Text
                 , ghostProgram :: !GhostProgram
                 , patternList  :: ![PatternTuple]
                 }
@@ -48,7 +48,7 @@ type ProgramMap = Map.Map ResourceKey ProgramRepr
 
 -- | A representation of a pattern run instance.
 data PatternRepr =
-    PatternRepr { resourceIdPattern_ :: !Text }
+    PatternRepr { patternUrl :: !Text }
 
 -- | Map from (pattern id) string to the corresponding pattern
 -- instance representation.

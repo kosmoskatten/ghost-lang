@@ -43,8 +43,8 @@ data PatternInfo = PatternInfo { patternName   :: !Text
                                }
     deriving (Eq, Generic, Show)
 
--- | A data type that is describing a resource id (url).
-data Resource = Resource { resourceId :: !Text }
+-- | A data type that is describing a resource url.
+data Resource = Resource { resourceUrl :: !Text }
     deriving (Eq, Generic, Show)
 
 -- | A data type that is describing a remote service.
@@ -115,7 +115,7 @@ loadProgramUrl = "/program/load"
 listSelectedProgram :: Manager -> Server -> Resource 
                     -> IO (Either String [PatternInfo])
 listSelectedProgram mgr baseUrl res = do
-  let url = baseUrl `mappend` (T.unpack $ resourceId res) `mappend` "/list"
+  let url = baseUrl `mappend` (T.unpack $ resourceUrl res) `mappend` "/list"
   result <- tryString $ do
       req <- mkGetRequest url
       serverTalk req mgr
@@ -147,7 +147,7 @@ listProgramsUrl = "/program/list"
 runNamedPattern :: Manager -> Server -> Resource 
                 -> NamedPattern -> IO (Either String Resource)
 runNamedPattern mgr baseUrl res pattern = do
-  let url = baseUrl `mappend` (T.unpack $ resourceId res) 
+  let url = baseUrl `mappend` (T.unpack $ resourceUrl res) 
                     `mappend` "/named-pattern"
   result <- tryString $ do
       req <- mkPostRequest url pattern

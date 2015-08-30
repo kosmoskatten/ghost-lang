@@ -147,4 +147,4 @@ withSourceProgram name content act =
         return filePath
 
 toResourceKey :: Resource -> ResourceKey
-toResourceKey = last . T.splitOn "/" . resourceId
+toResourceKey = last . T.splitOn "/" . resourceUrl

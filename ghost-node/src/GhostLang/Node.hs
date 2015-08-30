@@ -90,8 +90,8 @@ route state req =
        | requestMethod req == "GET" -> handleSelectedProgramList state key
        | otherwise                  -> handleNotAllowed ["GET"]
 
-           -- Route a request for running a named pattern from the
-           -- selected ghost-program. Only POST requests are accepted.
+     -- Route a request for running a named pattern from the
+     -- selected ghost-program. Only POST requests are accepted.
      ["program", key, "named-pattern"]
        | requestMethod req == "POST" -> handleNamedPatternRun state req key
        | otherwise                   -> handleNotAllowed ["POST"]
@@ -147,7 +147,7 @@ handleNamedPatternRun state request resId = do
         Just (_, _, p) -> do
             id' <- genId            
             let patternId = "/pattern/" `mappend` id'
-                answer    = Resource { resourceId = patternId }
+                answer    = Resource { resourceUrl = patternId }
             return $ jsonResponse status201 answer
         Nothing        -> return $ textResponse status409 "Pattern not found"
     Nothing  -> return notFound

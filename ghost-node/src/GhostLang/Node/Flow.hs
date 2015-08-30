@@ -47,7 +47,7 @@ setHttpConfig State {..} Service {..} =
 
 -- | List all registered programs.
 listPrograms :: State -> IO [Resource]
-listPrograms state = map (Resource . resourceId_) <$> allPrograms state
+listPrograms state = map (Resource . programUrl) <$> allPrograms state
 
 -- | List the patterns from the selected program.
 listPatternsFromProgram :: State -> ResourceKey -> IO (Maybe [PatternInfo])
@@ -62,13 +62,13 @@ loadProgram state ProgramPath {..} = do
   case result of
     Right program -> do
       key <- genId
-      let resId  = "/program/" `T.append` key
-          repr   = ProgramRepr { programPath_ = programPath
-                               , resourceId_  = resId
-                               , ghostProgram = program
-                               , patternList  = toPatternList program
-                               }
-          answer = Resource { resourceId = resId }
+      let url  = "/program/" `T.append` key
+          repr = ProgramRepr { programPath_ = programPath
+                             , programUrl   = url
+                             , ghostProgram = program
+                             , patternList  = toPatternList program
+                             }
+          answer = Resource { resourceUrl = url }
       insertProgram state key repr
       return $ Right answer
     Left err      -> return $ Left err
