@@ -15,6 +15,7 @@ module GhostLang.Node.State
     , modifyTVar'IO
     ) where
 
+import Control.Concurrent.Async (Async)
 import Control.Concurrent.STM ( TVar
                               , atomically
                               , newTVarIO
@@ -23,9 +24,13 @@ import Control.Concurrent.STM ( TVar
                               )
 import Data.Text (Text)
 import GhostLang ( GhostProgram
+                 , GhostPattern
                  , PatternTuple
+                 , Counter
                  , NetworkConfiguration (..)
-                 , emptyNetworkConfiguration )
+                 , emptyCounter
+                 , emptyNetworkConfiguration 
+                 )
 import System.Log.FastLogger ( LoggerSet
                              , defaultBufSize
                              , newStdoutLoggerSet
@@ -49,23 +54,28 @@ type ProgramMap = Map.Map ResourceKey ProgramRepr
 
 -- | A representation of a pattern run instance.
 data PatternRepr =
-    PatternRepr { patternUrl :: !Text }
+    PatternRepr { patternUrl   :: !Text
+                , ghostPattern :: !GhostPattern 
+                , async_       :: Async ()
+                }
 
 -- | Map from (pattern id) string to the corresponding pattern
 -- instance representation.
 type PatternMap = Map.Map ResourceKey PatternRepr
 
 -- | State for the ghost-node.
-data State = State { programMap  :: TVar ProgramMap
-                   , patternMap  :: TVar PatternMap
-                   , networkConf :: TVar NetworkConfiguration
-                   , logger      :: !LoggerSet }
+data State = State { programMap    :: TVar ProgramMap
+                   , patternMap    :: TVar PatternMap
+                   , networkConf   :: TVar NetworkConfiguration
+                   , globalCounter :: TVar Counter
+                   , logger        :: !LoggerSet }
 
 -- | Initialize the state.
 initState :: IO State
 initState = State <$> newTVarIO Map.empty
                   <*> newTVarIO Map.empty
                   <*> newTVarIO emptyNetworkConfiguration
+                  <*> newTVarIO emptyCounter
                   <*> newStdoutLoggerSet defaultBufSize
 
 -- | Store a compiled ghost-program into the program map.

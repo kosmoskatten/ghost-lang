@@ -8,15 +8,11 @@ module GhostLang.Node
     ) where
 
 import Data.ByteString (ByteString)
-import Data.List (find)
+import Data.ByteString.Builder (byteString)
 import Data.Maybe (fromJust)
+import Data.Text.Encoding (encodeUtf8)
 import Data.Time (getCurrentTime)
-import GhostLang.API ( ProgramPath (..)
-                     , PatternInfo (..)
-                     , Resource (..)
-                     , NamedPattern (..)
-                     , ExecParams (..)
-                     , FromJSON
+import GhostLang.API ( FromJSON
                      , ToJSON
                      , encode
                      , decode' )
@@ -25,14 +21,12 @@ import GhostLang.Node.Flow ( getHttpConfig
                            , listPrograms
                            , listPatternsFromProgram
                            , loadProgram
+                           , runNamedPattern
                            , listPatterns
                            )
-import GhostLang.Node.IdGen (genId)
 import GhostLang.Node.State ( State (..)
                             , ResourceKey
-                            , ProgramRepr (..)
                             , initState
-                            , lookupProgram
                             )
 import Network.HTTP.Types
 import Network.Wai
@@ -40,7 +34,6 @@ import Network.Wai.Handler.Warp (run)
 import System.Log.FastLogger (ToLogStr (..), pushLogStrLn)
 import Text.Printf (printf)
 import qualified Data.ByteString.Char8 as BS
-import qualified Data.ByteString.Lazy.Char8 as LBS
 
 -- | Start and run the ghost-node.
 runNode :: Int -> IO ()
@@ -104,7 +97,7 @@ route state req =
        | otherwise                  -> handleNotAllowed ["GET"]
         
      -- No matching handler is found.
-     _ -> return notFound
+     _ -> return $ notFound ("Not found: " `BS.append` rawPathInfo req)
                                             
 -- | Get the http configuration. Return the configuration as JSON
 -- with response code 200.
@@ -127,7 +120,7 @@ handleProgramLoad state request = do
   result <- loadProgram state =<< decodeBody request
   case result of
     Right answer -> return $ jsonResponse status201 answer
-    Left err     -> return $ textResponse status409 (LBS.pack err)
+    Left err     -> return $ textResponse status409 (BS.pack err)
 
 -- | List the resources for all loaded programs. Always 200 as
 -- response.
@@ -138,26 +131,19 @@ handleProgramList state = jsonResponse status200 <$> listPrograms state
 -- 200 if the program is found, otherwise 404.
 handleSelectedProgramList :: State -> ResourceKey -> IO Response
 handleSelectedProgramList state key =
-    maybe notFound (jsonResponse status200) 
-          <$> listPatternsFromProgram state key
+    maybe (notFound $ "Not found program key: " `BS.append` encodeUtf8 key)
+          (jsonResponse status200) 
+              <$> listPatternsFromProgram state key
 
 -- | Run a named pattern from the selected program. If the pattern is
--- found a response code 201 is returned. If the pattern is not found
--- 409 is returned, if the program not is found 404 is returned.
+-- found a response code 201 is returned. If the program or the
+-- pattern is not found 404 is returned.
 handleNamedPatternRun :: State -> Request -> ResourceKey -> IO Response
-handleNamedPatternRun state request resId = do
-  maybeProgram <- lookupProgram state resId
-  case maybeProgram of
-    Just prog -> do
-      msg <- decodeBody request
-      case find (\(l, _, _) -> l == execPattern msg) $ patternList prog of
-        Just (_, _, p) -> do
-            id' <- genId            
-            let patternId = "/pattern/" `mappend` id'
-                answer    = Resource { resourceUrl = patternId }
-            return $ jsonResponse status201 answer
-        Nothing        -> return $ textResponse status409 "Pattern not found"
-    Nothing  -> return notFound
+handleNamedPatternRun state request key = do
+  result <- runNamedPattern state key =<< decodeBody request
+  case result of
+    Right answer -> return $ jsonResponse status201 answer
+    Left err     -> return $ notFound err
 
 -- | List the resources for all patterns in flight. Always 200 as
 -- response.
@@ -168,15 +154,16 @@ handleNotAllowed :: [ByteString] -> IO Response
 handleNotAllowed allow = 
     return $ responseLBS status405 [("Allow", "," `BS.intercalate` allow)] ""
 
-notFound :: Response
-notFound = textResponse status404 "Resource Not Found"
+notFound :: ByteString -> Response
+notFound = textResponse status404
 
 jsonResponse :: ToJSON a => Status -> a -> Response
 jsonResponse status = 
     responseLBS status [("Content-Type", "application/json")] . encode
 
-textResponse :: Status -> LBS.ByteString -> Response
-textResponse status = responseLBS status [("Content-Type", "text/plain")]
+textResponse :: Status -> ByteString -> Response
+textResponse status = 
+    responseBuilder status [("Content-Type", "text/plain")] . byteString
 
 -- | Strictly decode the body to a JSON data structure. May throw an
 -- exception if the decoding is failing.

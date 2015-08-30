@@ -47,6 +47,10 @@ data NetworkConfiguration =
 
                          , httpServicePort    :: !Int
                          -- ^ The network port to the http service.
+
+                         , srcIpAddress       :: !(Maybe String)
+                         -- ^ The requested source IP address for the
+                         -- connections in the flow (if any).
                          }
 
 -- | Create a default setup runtime state.
@@ -63,4 +67,5 @@ emptyNetworkConfiguration :: NetworkConfiguration
 emptyNetworkConfiguration = 
     NetworkConfiguration { httpServiceAddress = "-"
                          , httpServicePort    = 0
+                         , srcIpAddress       = Nothing
                          }
