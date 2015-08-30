@@ -18,6 +18,7 @@ import GhostLang.Node.Flow ( getHttpConfig
                            , listPrograms
                            , listPatternsFromProgram
                            , loadProgram
+                           , listPatterns
                            )
 import GhostLang.Node.State ( NetworkConfiguration (..)
                             , ResourceKey
@@ -47,6 +48,10 @@ initStateTest = do
   -- shall be Nothing as reply.
   patterns <- listPatternsFromProgram state "foo"
   Nothing @=? patterns
+
+  -- There shall be no in flight patterns in the initial state.
+  initPatterns <- listPatterns state
+  [] @=? initPatterns
 
 -- | Test that the setting of a new http
 -- configuration is working as intended.

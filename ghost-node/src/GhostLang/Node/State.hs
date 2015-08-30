@@ -11,6 +11,7 @@ module GhostLang.Node.State
     , insertPattern
     , lookupPattern
     , allPrograms
+    , allPatterns
     , modifyTVar'IO
     ) where
 
@@ -88,6 +89,10 @@ insertPattern State {..} resId pattern =
 -- | Lookup a pattern instance from the pattern map.
 lookupPattern :: State -> ResourceKey -> IO (Maybe PatternRepr)
 lookupPattern State {..} resId = Map.lookup resId <$> readTVarIO patternMap
+
+-- | Enumerate all patterns from the pattern map.
+allPatterns :: State -> IO [PatternRepr]
+allPatterns State {..} = Map.elems <$> readTVarIO patternMap
 
 modifyTVar'IO :: TVar a -> (a -> a) -> IO ()
 modifyTVar'IO tvar g = atomically $ modifyTVar' tvar g

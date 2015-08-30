@@ -25,6 +25,7 @@ import GhostLang.Node.Flow ( getHttpConfig
                            , listPrograms
                            , listPatternsFromProgram
                            , loadProgram
+                           , listPatterns
                            )
 import GhostLang.Node.IdGen (genId)
 import GhostLang.Node.State ( State (..)
@@ -77,8 +78,8 @@ route state req =
        | requestMethod req == "POST" -> handleProgramLoad state req
        | otherwise                   -> handleNotAllowed ["POST"]
                                        
-     -- Route a request for listing all the resource ids for the
-     -- programs loaded.
+     -- Route a request for listing all the resources for the programs
+     -- loaded.
      ["program", "list"]
        | requestMethod req == "GET" -> handleProgramList state
        | otherwise                  -> handleNotAllowed ["GET"]
@@ -95,7 +96,13 @@ route state req =
      ["program", key, "named-pattern"]
        | requestMethod req == "POST" -> handleNamedPatternRun state req key
        | otherwise                   -> handleNotAllowed ["POST"]
-                                                             
+                                                     
+     -- Route a request for listing all the resources for the patterns
+     -- in flight.
+     ["pattern", "list"]
+       | requestMethod req == "GET" -> handlePatternList state
+       | otherwise                  -> handleNotAllowed ["GET"]
+        
      -- No matching handler is found.
      _ -> return notFound
                                             
@@ -122,7 +129,7 @@ handleProgramLoad state request = do
     Right answer -> return $ jsonResponse status201 answer
     Left err     -> return $ textResponse status409 (LBS.pack err)
 
--- | List the resource ids for all loaded programs. Always 200 as
+-- | List the resources for all loaded programs. Always 200 as
 -- response.
 handleProgramList :: State -> IO Response
 handleProgramList state = jsonResponse status200 <$> listPrograms state
@@ -151,6 +158,11 @@ handleNamedPatternRun state request resId = do
             return $ jsonResponse status201 answer
         Nothing        -> return $ textResponse status409 "Pattern not found"
     Nothing  -> return notFound
+
+-- | List the resources for all patterns in flight. Always 200 as
+-- response.
+handlePatternList :: State -> IO Response
+handlePatternList state = jsonResponse status200 <$> listPatterns state
 
 handleNotAllowed :: [ByteString] -> IO Response
 handleNotAllowed allow = 

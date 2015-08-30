@@ -8,6 +8,7 @@ module GhostLang.Node.Flow
     , listPrograms
     , listPatternsFromProgram
     , loadProgram
+    , listPatterns
     ) where
 
 import Control.Concurrent.STM (readTVarIO)
@@ -23,10 +24,12 @@ import GhostLang.Node.IdGen (genId)
 import GhostLang.Node.State ( State (..)
                             , ResourceKey
                             , ProgramRepr (..)
+                            , PatternRepr (..)
                             , NetworkConfiguration (..)
                             , insertProgram
                             , lookupProgram
                             , allPrograms
+                            , allPatterns
                             , modifyTVar'IO
                             )
 import qualified Data.Text as T
@@ -72,3 +75,7 @@ loadProgram state ProgramPath {..} = do
       insertProgram state key repr
       return $ Right answer
     Left err      -> return $ Left err
+
+-- | List all patterns instances.
+listPatterns :: State -> IO [Resource]
+listPatterns state = map (Resource . patternUrl) <$> allPatterns state
