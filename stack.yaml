@@ -2,6 +2,7 @@ resolver: lts-3.1
 packages:
 - ./ghost-api
 - ./ghost-lang
+- ./ghost-logger
 - ./ghost-shell
 - ./ghost-server
 - ./ghost-node

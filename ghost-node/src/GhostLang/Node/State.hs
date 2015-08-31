@@ -31,10 +31,7 @@ import GhostLang ( GhostProgram
                  , emptyCounter
                  , emptyNetworkConfiguration 
                  )
-import System.Log.FastLogger ( LoggerSet
-                             , defaultBufSize
-                             , newStdoutLoggerSet
-                             )
+import GhostLang.GLog (GLog, newStdoutGLog)
 
 import qualified Data.Map.Strict as Map
 
@@ -68,7 +65,7 @@ data State = State { programMap    :: TVar ProgramMap
                    , patternMap    :: TVar PatternMap
                    , networkConf   :: TVar NetworkConfiguration
                    , globalCounter :: TVar Counter
-                   , logger        :: !LoggerSet }
+                   , logger        :: !GLog }
 
 -- | Initialize the state.
 initState :: IO State
@@ -76,7 +73,7 @@ initState = State <$> newTVarIO Map.empty
                   <*> newTVarIO Map.empty
                   <*> newTVarIO emptyNetworkConfiguration
                   <*> newTVarIO emptyCounter
-                  <*> newStdoutLoggerSet defaultBufSize
+                  <*> newStdoutGLog
 
 -- | Store a compiled ghost-program into the program map.
 insertProgram :: State -> ResourceKey -> ProgramRepr -> IO ()

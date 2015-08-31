@@ -22,14 +22,13 @@ executable ghost-node
                      , async
                      , bytestring
                      , containers
-                     , fast-logger
                      , ghost-api
                      , ghost-lang
+                     , ghost-logger
                      , http-types
                      , random
                      , stm
                      , text
-                     , time
                      , wai
                      , warp
   hs-source-dirs:      src
@@ -48,10 +47,10 @@ test-suite ghost-node-test
                      , bytestring
                      , containers
                      , directory
-                     , fast-logger
                      , filepath
                      , ghost-api
                      , ghost-lang
+                     , ghost-logger
                      , HUnit
                      , random
                      , stm

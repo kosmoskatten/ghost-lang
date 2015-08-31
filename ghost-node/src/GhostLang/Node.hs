@@ -11,11 +11,11 @@ import Data.ByteString (ByteString)
 import Data.ByteString.Builder (byteString)
 import Data.Maybe (fromJust)
 import Data.Text.Encoding (encodeUtf8)
-import Data.Time (getCurrentTime)
 import GhostLang.API ( FromJSON
                      , ToJSON
                      , encode
                      , decode' )
+import GhostLang.GLog (logHttpReqResp, logString)
 import GhostLang.Node.Flow ( getHttpConfig
                            , setHttpConfig
                            , listPrograms
@@ -31,7 +31,6 @@ import GhostLang.Node.State ( State (..)
 import Network.HTTP.Types
 import Network.Wai
 import Network.Wai.Handler.Warp (run)
-import System.Log.FastLogger (ToLogStr (..), pushLogStrLn)
 import Text.Printf (printf)
 import qualified Data.ByteString.Char8 as BS
 
@@ -39,7 +38,7 @@ import qualified Data.ByteString.Char8 as BS
 runNode :: Int -> IO ()
 runNode port = do
   state <- initState
-  logg state $ printf "Ghost Node listening on port %d" port
+  logString (logger state) $ printf "Ghost Node listening on port %d" port
   run port $ application state
 
 -- | Application entry per request
@@ -47,11 +46,10 @@ application :: State -> Application
 application state request respond = do
     response <- route state request
     let status = responseStatus response
-    logg state $ 
-         printf "%s %s %d/%s" (BS.unpack $ requestMethod request) 
-                              (BS.unpack $ rawPathInfo request)
-                              (statusCode status)
-                              (BS.unpack $ statusMessage status)
+
+    logHttpReqResp (logger state) (requestMethod request)
+                   (rawPathInfo request) (statusCode status)
+                   (statusMessage status)
 
     respond response
 
@@ -169,14 +167,5 @@ textResponse status =
 -- exception if the decoding is failing.
 decodeBody :: FromJSON a => Request -> IO a
 decodeBody req = fromJust . decode' <$> lazyRequestBody req
-
--- | Output a line in the log. The line is prepended by the current time (UTC).
-logg :: State -> String -> IO ()
-logg State {..} str = do
-  now <- getCurrentTime
-  out $ show now `mappend` " : " `mappend` str
-    where
-      out :: String -> IO ()
-      out = pushLogStrLn logger . toLogStr
   
 
