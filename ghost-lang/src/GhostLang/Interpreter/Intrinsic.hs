@@ -13,8 +13,7 @@ import GhostLang.Interpreter.InterpreterM ( InterpreterM
                                           , evalTimeUnit
                                           , evalPayload
                                           , evalPace
-                                          , trace
-                                          , whenChecked
+                                          , logString
                                           , updHttpGETCounters
                                           , timedAction
                                           , liftIO )
@@ -50,33 +49,30 @@ instance InstructionSet IntrinsicSet where
     exec (Delay duration) = do
       duration' <- evalTimeUnit duration
 
-      trace $ printf "Delay %d us" duration'
-      whenChecked $ do
-        liftIO $ threadDelay duration'
+      logString $ printf "Delay %d us" duration'
+      liftIO $ threadDelay duration'
 
     -- | Execute a http GET command. No paceing.
     exec (Http GET _ payload Nothing) = do
       url <- mkGetUrl payload
 
-      trace $ printf "Http GET %s" url
-      whenChecked $ do
-        ((status, bytes), d) <- timedAction $ do
-            mgr <- connectionMgr <$> get
-            liftIO $ httpGet mgr url eagerConsumer
-        updHttpGETCounters d bytes status
+      logString $ printf "Http GET %s" url
+      ((status, bytes), d) <- timedAction $ do
+        mgr <- connectionMgr <$> get
+        liftIO $ httpGet mgr url eagerConsumer
+      updHttpGETCounters d bytes status
 
     -- | Execute a http GET command with paceing.
     exec (Http GET _ payload (Just pace)) = do
       url <- mkGetUrl payload
       pace' <- evalPace pace
 
-      trace $ printf "Http GET %s, pace %ld bytes per sec" url pace'
-      whenChecked $ do
-        ((status, bytes), d) <- timedAction $ do
-            mgr    <- connectionMgr <$> get
-            buffer <- liftIO $ initVirtualBuffer pace'
-            liftIO $ httpGet mgr url (pacedConsumer buffer)
-        updHttpGETCounters d bytes status
+      logString $ printf "Http GET %s, pace %ld bytes per sec" url pace'
+      ((status, bytes), d) <- timedAction $ do
+        mgr    <- connectionMgr <$> get
+        buffer <- liftIO $ initVirtualBuffer pace'
+        liftIO $ httpGet mgr url (pacedConsumer buffer)
+      updHttpGETCounters d bytes status
 
     exec (Http POST _ _ _) = undefined
 

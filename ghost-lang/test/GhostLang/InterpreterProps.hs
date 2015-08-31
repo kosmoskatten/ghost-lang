@@ -10,6 +10,7 @@ import Control.Monad (forM)
 import Data.List (foldl')
 import Data.Text (Text)
 import GHC.Int (Int64)
+import GhostLang.GLog (newEmptyGLog)
 import GhostLang.InterpreterGenerators ( SimpleSequencePattern (..)
                                        , ManySimpleSequencePatterns (..)
                                        , NonNestedLoopPattern (..)
@@ -17,7 +18,6 @@ import GhostLang.InterpreterGenerators ( SimpleSequencePattern (..)
                                        )
 import GhostLang.Interpreter (runPattern')
 import GhostLang.RuntimeState ( Counter (..)
-                              , Mode (..)
                               , emptyNetworkConfiguration
                               , emptyCounter
                               , getPatternRuns
@@ -37,7 +37,8 @@ simpleSequencePattern :: SimpleSequencePattern -> Property
 simpleSequencePattern (SimpleSequencePattern p) =
     monadicIO $ do
       inpC    <- run (newTVarIO emptyCounter)
-      run (runPattern' p [inpC] emptyNetworkConfiguration Normal)
+      run (runPattern' p [inpC] emptyNetworkConfiguration False
+             =<< newEmptyGLog)
       counter <- run (readTVarIO inpC)
 
       -- As many instructions invoked as the number of operations in
@@ -69,7 +70,8 @@ manySimpleSequencePatterns (ManySimpleSequencePatterns ps) =
       locals  <- run (forM ps $ \p -> do
                         localC <- newTVarIO emptyCounter
                         runPattern' p [globalC, localC] 
-                                    emptyNetworkConfiguration Normal
+                                    emptyNetworkConfiguration False
+                                      =<< newEmptyGLog
                         return =<< readTVarIO localC
                      )
       global <- run (readTVarIO globalC)
@@ -95,7 +97,8 @@ nonNestedLoopPattern :: NonNestedLoopPattern -> Property
 nonNestedLoopPattern (NonNestedLoopPattern p) =
     monadicIO $ do
       inpC    <- run (newTVarIO emptyCounter)
-      run (runPattern' p [inpC] emptyNetworkConfiguration Normal)
+      run (runPattern' p [inpC] emptyNetworkConfiguration False
+             =<< newEmptyGLog)
       counter <- run (readTVarIO inpC)
 
       -- Count the number of invoke operations and loop
@@ -118,7 +121,8 @@ nonNestedConcPattern :: NonNestedConcPattern -> Property
 nonNestedConcPattern (NonNestedConcPattern p) =
     monadicIO $ do
       inpC    <- run (newTVarIO emptyCounter)
-      run (runPattern' p [inpC] emptyNetworkConfiguration Normal)
+      run (runPattern' p [inpC] emptyNetworkConfiguration False
+             =<< newEmptyGLog)
       counter <- run (readTVarIO inpC)
 
       -- Count the number of invoke operations and concurrently

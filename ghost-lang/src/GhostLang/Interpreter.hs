@@ -9,7 +9,7 @@ import GhostLang.Interpreter.InstructionSet
 import GhostLang.RuntimeState ( RuntimeState (..)
                               , TVar
                               , Counter                                
-                              , Mode
+                              , GLog
                               , NetworkConfiguration )
 import GhostLang.Types (Pattern)
 import Network.HTTP.Client ( ManagerSettings (..)
@@ -25,14 +25,16 @@ runPattern' :: InstructionSet a
             => Pattern a 
             -> [TVar Counter] 
             -> NetworkConfiguration
-            -> Mode
+            -> Bool
+            -> GLog
             -> IO ()
-runPattern' p cs nw m = do
+runPattern' p cs nw t glog = do
   mgr <- newManager managerSettings
   let state = RuntimeState { counters             = cs
                            , networkConfiguration = nw
                            , connectionMgr        = mgr
-                           , mode                 = m }
+                           , shallTrace           = t
+                           , logger               = glog }
   runInterpreter state $ execPattern p
 
 managerSettings :: ManagerSettings

@@ -26,11 +26,8 @@ module GhostLang.Interpreter.InterpreterM
     , evalPayload
     , evalPace
 
-    -- Checked execution of an action:
-    , whenChecked
-
     -- Trace a message:
-    , trace
+    , logString
 
     , ask
     , get
@@ -64,7 +61,6 @@ import GHC.Int (Int64)
 import GhostLang.Interpreter.Scope (Scope, emptyScope, lookup)
 import GhostLang.RuntimeState ( Counter (..)
                               , HttpStatus
-                              , Mode (..) 
                               , RuntimeState (..)
                               , defaultRuntimeState
                               , incPatternExecTime'
@@ -81,6 +77,7 @@ import GhostLang.Types ( Value (..)
                        , Pace (..) )
 import Prelude hiding (lookup)
 import Text.Printf (printf)
+import qualified GhostLang.GLog as Logger
 
 -- | Interpreter monad type for interpretation of instructions
 -- implementing the InstructionSet type class.
@@ -98,11 +95,10 @@ runInterpreter state interpreter =
 
 -- | Run an interpreterM action for testing purposes. Run with an
 -- empty counter set beside the setting of
-runInterpreterTest :: Mode -> InterpreterM a -> IO a
-runInterpreterTest mode' interpreter = do
+runInterpreterTest :: InterpreterM a -> IO a
+runInterpreterTest interpreter = do
   state <- defaultRuntimeState
-  let state' = state { mode = mode' }
-  evalStateT (runReaderT (extractInterpreterM interpreter) emptyScope) state'
+  evalStateT (runReaderT (extractInterpreterM interpreter) emptyScope) state
 
 -- | Increase the counter for pattern execution time.
 incPatternExecTime :: NominalDiffTime -> InterpreterM ()
@@ -176,22 +172,13 @@ evalPace (Gbps v) = bitsToBytes . (1000000000 *) <$> evalValue v
 bitsToBytes :: Int64 -> Int64
 bitsToBytes n = n `div` 8
 
--- | Run the provided action iff the runtime state indicate execution.
-whenChecked :: InterpreterM () -> InterpreterM ()
-whenChecked act = do
-  mode' <- mode <$> get
-  when (mode' == Normal || mode' == Trace) act
-
--- | Trace a message.
-trace :: String -> InterpreterM ()
-trace msg = do
-  mode' <- mode <$> get
-  when (mode' == Trace) $ do
-      tid <- liftIO myThreadId
-      now <- liftIO getCurrentTime
-      liftIO $ printf "%s - %s: %s\n" (show tid) (show now) msg
-  when (mode' == Dry) $ do
-      liftIO $ putStrLn msg
+-- | Log a string if tracing is active.
+logString :: String -> InterpreterM ()
+logString str = do
+  shallTrace' <- shallTrace <$> get
+  when (shallTrace') $ do
+    logger' <- logger <$> get
+    liftIO $ Logger.logString logger' str
 
 updateCounter :: (Counter -> Counter) -> InterpreterM ()
 updateCounter g = do

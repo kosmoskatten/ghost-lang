@@ -8,7 +8,6 @@ import GhostLang.CommonGenerators ()
 import GhostLang.Interpreter.InterpreterM ( runInterpreterTest
                                           , evalValue
                                           , evalTimeUnit )
-import GhostLang.RuntimeState (Mode (..))
 import GhostLang.Types (Value (..), TimeUnit (..))
 import Test.QuickCheck
 import Test.QuickCheck.Monadic
@@ -17,7 +16,7 @@ import Test.QuickCheck.Monadic
 evalValueP :: Value -> Property
 evalValueP v@(Literal x) = 
     monadicIO $ do
-      x' <- run $ runInterpreterTest Normal (evalValue v)
+      x' <- run $ runInterpreterTest (evalValue v)
       assert $ x == x'
 
 -- Just approve the other cases for now.
@@ -32,7 +31,7 @@ evalTimeUnitP t@(Sec  v) = evalTimeUnitP' 1000000 t v
 evalTimeUnitP' :: Int64 -> TimeUnit -> Value -> Property
 evalTimeUnitP' factor t (Literal x) =
     monadicIO $ do
-      x' <- run $ runInterpreterTest Normal (evalTimeUnit t)
+      x' <- run $ runInterpreterTest (evalTimeUnit t)
       assert $ (x * factor) == fromIntegral x'
 
 -- Just approve the other cases for ever :-)

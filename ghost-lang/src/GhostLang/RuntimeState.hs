@@ -3,24 +3,19 @@ module GhostLang.RuntimeState
     ( TVar
     , RuntimeState (..)
     , NetworkConfiguration (..)
-    , Mode (..)
+    , GLog
     , defaultRuntimeState
     , emptyNetworkConfiguration
     , module GhostLang.RuntimeState.Counter
     ) where
 
 import Control.Concurrent.STM (TVar)
+import GhostLang.GLog (GLog, newEmptyGLog)
 import GhostLang.RuntimeState.Counter
 import Network.HTTP.Client ( Manager
                            , defaultManagerSettings
                            , newManager
                            )
-
--- | Execution modes for pattern. In Normal mode no tracing is made,
--- Trace mode executes all actions with trace activated and Dry mode
--- only perform tracing.
-data Mode = Normal | Trace | Dry
-    deriving (Eq, Show)
 
 -- | RuntimState record. Each pattern instance is given each its own
 -- record instance.
@@ -36,8 +31,11 @@ data RuntimeState =
                  -- ^ A connection manager local for this state
                  -- instance.
 
-                 , mode                 :: !Mode
+                 , shallTrace           :: !Bool
                  -- ^ The execution mode.
+
+                 , logger               :: !GLog
+                 -- ^ The logger.
                  }
 
 -- | Network configuration parameters.
@@ -53,15 +51,18 @@ data NetworkConfiguration =
                          -- connections in the flow (if any).
                          }
 
--- | Create a default setup runtime state.
+-- | Create a default setup runtime state. Should only be used by test
+-- codes.
 defaultRuntimeState :: IO RuntimeState
 defaultRuntimeState = do
-  mgr <- newManager defaultManagerSettings
+  mgr  <- newManager defaultManagerSettings
+  glog <- newEmptyGLog
   return $ RuntimeState 
              { counters             = []
              , networkConfiguration = emptyNetworkConfiguration
              , connectionMgr        = mgr
-             , mode                 = Normal }
+             , shallTrace           = False
+             , logger               = glog }
 
 emptyNetworkConfiguration :: NetworkConfiguration
 emptyNetworkConfiguration = 

@@ -6,7 +6,6 @@ module GhostLang
     , GhostPattern
     , PatternTuple
     , Counter (..)
-    , Mode (..)
     , NetworkConfiguration (..)
     , compileAndLink
     , emptyCounter
@@ -24,7 +23,7 @@ import GhostLang.Types ( Label
                        )
 import GhostLang.RuntimeState ( TVar
                               , Counter (..)
-                              , Mode (..)
+                              , GLog
                               , NetworkConfiguration (..)
                               , emptyCounter
                               , emptyNetworkConfiguration )
@@ -46,7 +45,8 @@ toPatternList (Program xs) = map extrTuple xs
 runPattern :: GhostPattern 
            -> [TVar Counter] 
            -> NetworkConfiguration 
-           -> Mode 
+           -> Bool
+           -> GLog
            -> IO ()
 runPattern = runPattern'
 

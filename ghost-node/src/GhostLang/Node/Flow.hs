@@ -20,7 +20,6 @@ import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import GhostLang ( GhostPattern
                  , PatternTuple
-                 , Mode (..)
                  , compileAndLink
                  , emptyCounter
                  , runPattern
@@ -124,8 +123,8 @@ runNamedPattern' state NamedPattern {..} pattern = do
       url           = "/pattern/" `T.append` key
 
   async_' <- async $ runPattern pattern [localCounter, globalCounter state]
-                                networkConf''
-                                (fromBool $ shallTrace execParams)
+                                networkConf'' (shallTrace execParams)
+                                (logger state)
 
   insertPattern state key $ PatternRepr { patternUrl   = url
                                         , ghostPattern = pattern
@@ -144,7 +143,3 @@ fromPatternList label patterns =
     where 
       matchingLabel (label', _, _) = label' == label
       lastInTuple (_, _, pattern)  = Just pattern
-
-fromBool :: Bool -> Mode
-fromBool True  = Trace
-fromBool False = Normal

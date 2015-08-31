@@ -5,6 +5,7 @@
 -- performance generic logger functions.
 module GhostLang.GLog
     ( GLog
+    , newEmptyGLog
     , newStdoutGLog
 
     -- Ghost application APIs.
@@ -24,12 +25,16 @@ import System.Log.FastLogger ( LoggerSet
                              )
 import qualified Data.ByteString.Char8 as BS
 
--- | A thin type wrapper on top of LoggerSet.
-newtype GLog = GLog LoggerSet
+
+data GLog = GLog LoggerSet | Empty
 
 -- | Create a new stdout targeting logger.
 newStdoutGLog :: IO GLog
 newStdoutGLog = GLog <$> newStdoutLoggerSet defaultBufSize
+
+-- | Create an empty logger.
+newEmptyGLog :: IO GLog
+newEmptyGLog = return Empty
 
 -- | Log a line with details about the request and the response.
 -- Format. <timestamp> : <http method> <resource url> - <resp code>/<resp msg>
@@ -56,6 +61,8 @@ logOut :: GLog -> [LogStr] -> IO ()
 logOut (GLog logger) xs = do
   now <- toLogStr <$> getCurrentTimeBS
   pushLogStrLn logger $ now <> toLogStr (" : " :: String) <> mconcat xs
+
+logOut Empty _ = return ()
 
 getCurrentTimeBS :: IO ByteString
 getCurrentTimeBS = BS.pack . show <$> getCurrentTime

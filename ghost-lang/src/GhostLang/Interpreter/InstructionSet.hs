@@ -17,7 +17,7 @@ import GhostLang.Interpreter.InterpreterM ( InterpreterM
                                           , incProcCalls
                                           , timedAction
                                           , evalValue
-                                          , trace
+                                          , logString
                                           , ask
                                           , get
                                           , local
@@ -43,11 +43,11 @@ class InstructionSet a where
 -- | Execute a pattern within InterpreterM.
 execPattern :: InstructionSet a => Pattern a -> InterpreterM ()
 execPattern (Pattern _ name _ ops) = do
-  trace $ printf "Enter pattern '%s'" (T.unpack name)
+  logString $ printf "Enter pattern '%s'" (T.unpack name)
   incPatternRuns name
   (_, d) <- timedAction $ mapM_ exec ops
   incPatternExecTime d
-  trace $ printf "Exit pattern '%s'" (T.unpack name)
+  logString $ printf "Exit pattern '%s'" (T.unpack name)
 
 execOperation :: InstructionSet a => Operation a -> InterpreterM ()
 execOperation = exec
@@ -65,18 +65,18 @@ instance InstructionSet a => InstructionSet (Operation a) where
     exec (Loop times ops) = do
       incLoopCmds
       times' <- fromIntegral <$> evalValue times
-      trace $ printf "Enter loop (iter=%d)" times'
+      logString $ printf "Enter loop (iter=%d)" times'
       
       replicateM_ times' $ mapM_ exec ops
-      trace $ printf "Exit loop"
+      logString $ printf "Exit loop"
 
     -- Invoke a concurrent command. Update counters accordingly.
     exec (Concurrently ops) = do
-      trace $ printf "Enter concurrent section"
+      logString $ printf "Enter concurrent section"
       incConcCmds
       state <- get
       liftIO $ concurrently state ops
-      trace $ printf "Exit concurrent section"
+      logString $ printf "Exit concurrent section"
 
     -- Invoke a procedure call. Update counters accordingly.
     exec (Call proc argValues) = do
@@ -86,7 +86,7 @@ instance InstructionSet a => InstructionSet (Operation a) where
       let Procedure procName argNames ops = proc
           pairs = argNames `zip` argValues
 
-      trace $ printf "Enter proc '%s'" (T.unpack procName)
+      logString $ printf "Enter proc '%s'" (T.unpack procName)
 
       -- Copy the values and name them correctly into a new
       -- scope. Some values may need to be copied from the current
@@ -97,7 +97,7 @@ instance InstructionSet a => InstructionSet (Operation a) where
       
       -- Run the procedure inside its new scope.
       local (const scope) $ mapM_ exec ops
-      trace $ printf "Exit proc '%s'" (T.unpack procName)
+      logString $ printf "Exit proc '%s'" (T.unpack procName)
           where
             copyValue :: (Label, Value) -> InterpreterM (Label, Value)
             copyValue (label, Stored label') = do
