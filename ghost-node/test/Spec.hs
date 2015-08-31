@@ -7,6 +7,9 @@ import GhostLang.FlowTests ( initStateTest
                            , loadNonExistingProgramTest
                            , loadDefunctProgramTest
                            , loadCompilableProgramTest
+                           , runPatternFromNonExistingProgramTest
+                           , runNonExistingPatternTest
+                           , runExistingPatternTest
                            )
 import Test.Framework (Test, defaultMain, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -22,6 +25,10 @@ testSuite =
       , testCase "LoadNonexistingProgram" loadNonExistingProgramTest
       , testCase "LoadDefunctProgram" loadDefunctProgramTest
       , testCase "LoadCompilableProgram" loadCompilableProgramTest
+      , testCase "RunPatternFromNonExistingProgram" 
+                 runPatternFromNonExistingProgramTest
+      , testCase "RunNonExistingPattern" runNonExistingPatternTest
+      , testCase "RunExistingPattern" runExistingPatternTest
       ]
     ]
 

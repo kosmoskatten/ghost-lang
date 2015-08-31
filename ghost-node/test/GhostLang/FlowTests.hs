@@ -5,11 +5,17 @@ module GhostLang.FlowTests
     , loadNonExistingProgramTest
     , loadDefunctProgramTest
     , loadCompilableProgramTest
+    , runPatternFromNonExistingProgramTest
+    , runNonExistingPatternTest
+    , runExistingPatternTest
     ) where
 
 import Control.Exception (bracket)
+import Data.Text (Text)
 import GhostLang (emptyNetworkConfiguration)
 import GhostLang.API ( ProgramPath (..)
+                     , NamedPattern (..)
+                     , ExecParams (..)
                      , Resource (..)
                      , Service (..)
                      )
@@ -18,6 +24,7 @@ import GhostLang.Node.Flow ( getHttpConfig
                            , listPrograms
                            , listPatternsFromProgram
                            , loadProgram
+                           , runNamedPattern
                            , listPatterns
                            )
 import GhostLang.Node.State ( NetworkConfiguration (..)
@@ -111,6 +118,48 @@ loadCompilableProgramTest = do
 
     _              -> assertBool "Shall give a Right value" False
 
+-- | Try running a pattern from a non existing program. Shall fail.
+runPatternFromNonExistingProgramTest :: Assertion
+runPatternFromNonExistingProgramTest = do
+  state <- initState
+  result <- runNamedPattern state "nonexistingprogram" $ 
+                namedPattern "nonexistingpattern"
+
+  case result of
+    Left _ -> do
+      patterns <- listPatterns state
+      [] @=? patterns
+    _      -> assertBool "Shall give a Left value" False
+
+-- | Try running a non existing pattern from a valid program. Shall
+-- fail.
+runNonExistingPatternTest :: Assertion
+runNonExistingPatternTest = do
+  state     <- initState
+  Right url <- withSourceProgram "Main.gl" compilableProgram $ loadProgram state
+  result    <- runNamedPattern state (toResourceKey url) $
+                  namedPattern "nonexistingpattern"
+
+  case result of
+    Left _ -> do
+      patterns <- listPatterns state
+      [] @=? patterns
+    _      -> assertBool "Shall give a Left value" False
+
+-- | Run a named pattern.
+runExistingPatternTest :: Assertion
+runExistingPatternTest = do
+  state     <- initState
+  Right url <- withSourceProgram "Main.gl" compilableProgram $ loadProgram state
+  result    <- runNamedPattern state (toResourceKey url) $
+                  namedPattern "delay1"
+
+  case result of
+    Right pattern -> do
+      patterns <- listPatterns state
+      [pattern] @=? patterns
+    _             -> assertBool "Shall give a right value" False
+
 emptyService :: Service
 emptyService =
     Service { serviceAddress = httpServiceAddress emptyNetworkConfiguration
@@ -153,3 +202,10 @@ withSourceProgram name content act =
 
 toResourceKey :: Resource -> ResourceKey
 toResourceKey = last . T.splitOn "/" . resourceUrl
+
+namedPattern :: Text -> NamedPattern
+namedPattern key = 
+    NamedPattern { execPattern = key
+                 , execParams  = ExecParams { shallTrace = False
+                                            , srcIp      = Nothing }
+                 }
