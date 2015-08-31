@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Encapsulation of fast-logger to provide a logger interface for
--- ghost products.
+-- ghost products. The API is built up of both very specific logger
+-- functions tailor made for specific data types, and also lower
+-- performance generic logger functions.
 module GhostLang.GLog
     ( GLog
     , newStdoutGLog
