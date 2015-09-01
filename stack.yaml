@@ -1,6 +1,7 @@
 resolver: lts-3.3
 packages:
 - ./ghost-api
+- ./ghost-conduit
 - ./ghost-lang
 - ./ghost-logger
 - ./ghost-shell
