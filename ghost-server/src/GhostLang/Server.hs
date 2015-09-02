@@ -9,7 +9,7 @@ import GhostLang.Conduit ( Conduit
                          , DataChunk
                          , Flush (..)
                          , ($=)
-                         , await
+                         , awaitForever
                          , dataStream
                          , genDataChunk
                          , yield
@@ -57,6 +57,8 @@ route state request = do
         | otherwise                      -> handleNotAllowed ["GET"]
     _                                    -> return notFound
 
+-- | Handle a download request. The size of the request is attached as
+-- a query parameter to the request.
 handleDownload :: State -> Request -> IO Response
 handleDownload state request =
     case requestedSize request of
@@ -69,15 +71,18 @@ handleDownload state request =
                      [("Content-Type", "text/plain")]
                      "Missing or malformed size parameter"
 
+-- | Handle non allowed method by returning status 405.
 handleNotAllowed :: [ByteString] -> IO Response
 handleNotAllowed allow = 
     return $ responseLBS status405 [("Allow", "," `BS.intercalate` allow)] ""
 
+-- | Make a 404 response.
 notFound :: Response
 notFound = responseLBS status404 
                        [("Content-Type", "text/plain")] 
                        "Resource not found"
 
+-- | Get the requested size from the query parameter named "size".
 requestedSize :: Request -> Maybe Int
 requestedSize req = do
   val  <- lookup "size" $ queryString req
@@ -90,12 +95,8 @@ maybeInt str =
       [(value, "")] -> Just value
       _             -> Nothing
 
+-- | Conduit to convert from a stream of bytestrings to a stream of
+-- builders.
 streamConverter :: Conduit ByteString IO (Flush Builder)
-streamConverter = go =<< await
-    where
-      go :: Maybe ByteString -> Conduit ByteString IO (Flush Builder)
-      go (Just bs) = do
-        yield $ Chunk (byteString bs)
-        go =<< await
-      go Nothing   = return ()
+streamConverter = awaitForever (yield . Chunk . byteString)
 
