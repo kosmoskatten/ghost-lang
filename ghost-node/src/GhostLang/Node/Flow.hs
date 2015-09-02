@@ -10,9 +10,10 @@ module GhostLang.Node.Flow
     , runNamedPattern
     , loadProgram
     , listPatterns
+    , patternStatus
     ) where
 
-import Control.Concurrent.Async (async)
+import Control.Concurrent.Async (async, poll)
 import Control.Concurrent.STM (newTVarIO, readTVarIO)
 import Data.ByteString (ByteString)
 import Data.List (find)
@@ -31,6 +32,7 @@ import GhostLang.API ( PatternInfo (..)
                      , Service (..)
                      , ExecParams (..)
                      , NamedPattern (..)
+                     , PatternStatus (..)
                      )
 import GhostLang.Node.IdGen (genId)
 import GhostLang.Node.State ( State (..)
@@ -42,6 +44,7 @@ import GhostLang.Node.State ( State (..)
                             , lookupProgram
                             , allPrograms
                             , insertPattern
+                            , lookupPattern
                             , allPatterns
                             , modifyTVar'IO
                             )
@@ -134,6 +137,30 @@ runNamedPattern' state NamedPattern {..} pattern = do
 -- | List all patterns instances.
 listPatterns :: State -> IO [Resource]
 listPatterns state = map (Resource . patternUrl) <$> allPatterns state
+
+-- | List pattern execution status.
+patternStatus :: State -> ResourceKey -> IO (Maybe PatternStatus)
+patternStatus state key = do
+  maybe (return Nothing) patternStatus' =<< lookupPattern state key
+    where
+      patternStatus' :: PatternRepr -> IO (Maybe PatternStatus)
+      patternStatus' PatternRepr {..} = do
+        result <- poll async_
+        case result of
+          Just status ->
+              case status of
+                Right () ->
+                  return $ Just PatternStatus { completed   = True
+                                              , failed      = False
+                                              , failMessage = "" }
+                Left e   ->
+                  return $ Just PatternStatus { completed   = True
+                                              , failed      = True
+                                              , failMessage = T.pack $ show e }
+          Nothing     ->
+            return $ Just PatternStatus { completed   = False
+                                        , failed      = False
+                                        , failMessage = "" }
 
 -- | Try find a pattern with a specific name from a list of pattern
 -- tuples.

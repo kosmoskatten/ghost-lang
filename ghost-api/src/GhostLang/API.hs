@@ -7,6 +7,7 @@ module GhostLang.API
     , Service (..)
     , ExecParams (..)
     , NamedPattern (..)
+    , PatternStatus (..)
     , getHttpConfig
     , setHttpConfig
     , loadProgram
@@ -64,6 +65,14 @@ data ExecParams = ExecParams { shallTrace     :: !Bool
 data NamedPattern = NamedPattern { execPattern :: !Text
                                  , execParams  :: !ExecParams
                                  }
+    deriving (Eq, Generic, Show)
+
+-- | A data type describing if a pattern has completed, failed or if
+-- it is having a failure message.
+data PatternStatus = PatternStatus { completed   :: !Bool
+                                   , failed      :: !Bool
+                                   , failMessage :: !Text
+                                   }
     deriving (Eq, Generic, Show)
 
 type Server = String
@@ -230,3 +239,5 @@ instance FromJSON ExecParams
 instance ToJSON ExecParams
 instance FromJSON NamedPattern
 instance ToJSON NamedPattern
+instance FromJSON PatternStatus
+instance ToJSON PatternStatus

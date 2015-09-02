@@ -23,6 +23,7 @@ import GhostLang.Node.Flow ( getHttpConfig
                            , loadProgram
                            , runNamedPattern
                            , listPatterns
+                           , patternStatus
                            )
 import GhostLang.Node.State ( State (..)
                             , ResourceKey
@@ -93,6 +94,12 @@ route state req =
      ["pattern", "list"]
        | requestMethod req == "GET" -> handlePatternList state
        | otherwise                  -> handleNotAllowed ["GET"]
+
+     -- Route a request for listing the execution status for the
+     -- selected pattern.
+     ["pattern", key, "status"]
+       | requestMethod req == "GET" -> handlePatternStatus state key
+       | otherwise                  -> handleNotAllowed ["GET"]
         
      -- No matching handler is found.
      _ -> return $ notFound ("Not found: " `BS.append` rawPathInfo req)
@@ -147,6 +154,15 @@ handleNamedPatternRun state request key = do
 -- response.
 handlePatternList :: State -> IO Response
 handlePatternList state = jsonResponse status200 <$> listPatterns state
+
+-- | List the execution status for the selected pattern. If the
+-- pattern is found response code 200 is returned. If the pattern not
+-- is found 404 is returned.
+handlePatternStatus :: State -> ResourceKey -> IO Response
+handlePatternStatus state key = do
+  maybe (notFound $ "Not found program key: " `BS.append` encodeUtf8 key)
+        (jsonResponse status200)
+            <$> patternStatus state key
 
 handleNotAllowed :: [ByteString] -> IO Response
 handleNotAllowed allow = 
