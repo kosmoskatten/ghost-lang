@@ -43,6 +43,6 @@ dataStream DataChunk {..} n = go n
 -- | Generate a data chunk of the requested size n.
 genDataChunk :: Int -> IO DataChunk
 genDataChunk n = do
-  chunk' <- BS.pack <$> (replicateM n $ randomRIO (minBound, maxBound))
+  chunk' <- BS.pack <$> (replicateM n $ randomRIO (' ', '~'))
   return $ DataChunk { chunk = chunk', size = n }
 
