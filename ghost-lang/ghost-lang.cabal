@@ -22,6 +22,7 @@ test-suite ghost-lang-test
                        GhostLang.InterpreterMProps
                        GhostLang.IntrinsicTests
                        GhostLang.LinkerTests
+                       GhostLang.ParserProps
                        GhostLang.SerializationTests
                        GhostLang.Stringify
   build-depends:       base >= 4 && < 5
