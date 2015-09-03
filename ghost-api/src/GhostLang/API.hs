@@ -75,6 +75,16 @@ data PatternStatus = PatternStatus { completed   :: !Bool
                                    }
     deriving (Eq, Generic, Show)
 
+-- | Pattern level counters with information on execution times and
+-- data amounts.
+data PatternCounter = PatternCounter { totalTimeS   :: !Double
+                                     , httpGetTimeS :: !Double
+                                     , httpGetBytes :: !Int64
+                                     , httpPutTimeS :: !Int64
+                                     , httpPutBytes :: !Int64
+                                     }
+    deriving (Eq, Generic, Show)
+
 type Server = String
 
 -- | Get the http configuration.
@@ -241,3 +251,5 @@ instance FromJSON NamedPattern
 instance ToJSON NamedPattern
 instance FromJSON PatternStatus
 instance ToJSON PatternStatus
+instance FromJSON PatternCounter
+instance ToJSON PatternCounter

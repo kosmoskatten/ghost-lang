@@ -8,8 +8,11 @@ module GhostLang.FlowTests
     , runPatternFromNonExistingProgramTest
     , runNonExistingPatternTest
     , runExistingPatternTest
+    , patternStatusNonExistingPatternTest
+    , patternStatusFailingPatternTest
     ) where
 
+import Control.Concurrent (threadDelay)
 import Control.Exception (bracket)
 import Data.Text (Text)
 import GhostLang (emptyNetworkConfiguration)
@@ -18,6 +21,7 @@ import GhostLang.API ( ProgramPath (..)
                      , ExecParams (..)
                      , Resource (..)
                      , Service (..)
+                     , PatternStatus (..)
                      )
 import GhostLang.Node.Flow ( getHttpConfig
                            , setHttpConfig
@@ -26,6 +30,7 @@ import GhostLang.Node.Flow ( getHttpConfig
                            , loadProgram
                            , runNamedPattern
                            , listPatterns
+                           , patternStatus
                            )
 import GhostLang.Node.State ( NetworkConfiguration (..)
                             , ResourceKey
@@ -113,7 +118,7 @@ loadCompilableProgramTest = do
       -- be 2.
       patterns <- listPatternsFromProgram state $ toResourceKey resource
       case patterns of
-        Just xs -> 2 @=? length xs
+        Just xs -> 3 @=? length xs
         Nothing -> assertBool "Shall give a Just value" False
 
     _              -> assertBool "Shall give a Right value" False
@@ -160,6 +165,34 @@ runExistingPatternTest = do
       [pattern] @=? patterns
     _             -> assertBool "Shall give a right value" False
 
+-- | List the pattern status for a non existing pattern.
+patternStatusNonExistingPatternTest :: Assertion
+patternStatusNonExistingPatternTest = do
+  state  <- initState
+  result <- patternStatus state "nonexistingpattern"
+
+  case result of
+    Nothing -> return ()
+    _       -> assertBool "Shall return Nothing" False
+
+-- | List the pattern status for a pattern that has failed.
+patternStatusFailingPatternTest :: Assertion
+patternStatusFailingPatternTest = do
+  state      <- initState
+  Right url  <- withSourceProgram "Main.gl" compilableProgram $ 
+                  loadProgram state
+  Right url' <- runNamedPattern state (toResourceKey url) $ namedPattern "fail"
+
+  -- Short waiting time, 1/10 s, before querying the status.
+  threadDelay 100000
+  result <- patternStatus state (toResourceKey url')
+
+  case result of
+    Just status -> do
+      True @=? completed status
+      True @=? failed status
+    Nothing     -> assertBool "Shall give a Just value" False
+
 emptyService :: Service
 emptyService =
     Service { serviceAddress = httpServiceAddress emptyNetworkConfiguration
@@ -169,7 +202,8 @@ emptyService =
 defunctProgram :: String
 defunctProgram = "kklmli"
 
--- | A compilable program with only delay patterns.
+-- | A compilable program. Delay patterns and one http pattern that
+-- will fail on execution.
 compilableProgram :: String
 compilableProgram = 
     unlines $
@@ -182,6 +216,11 @@ compilableProgram =
     , "pattern delay2 with weight 1"
     , "{"
     , "  Delay literal(1) usec"
+    , "}"
+    , ""
+    , "pattern fail with weight 1"
+    , "{"
+    , "  Http GET [] literal(1) MB"
     , "}"
     ]
 
