@@ -10,6 +10,7 @@ module GhostLang.Node.Flow
     , runNamedPattern
     , loadProgram
     , listPatterns
+    , getGlobalCounter
     , patternStatus
     ) where
 
@@ -21,6 +22,7 @@ import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import GhostLang ( GhostPattern
                  , PatternTuple
+                 , Counter (..)
                  , compileAndLink
                  , emptyCounter
                  , runPattern
@@ -33,6 +35,7 @@ import GhostLang.API ( PatternInfo (..)
                      , ExecParams (..)
                      , NamedPattern (..)
                      , PatternStatus (..)
+                     , PatternCounter (..)
                      )
 import GhostLang.Node.IdGen (genId)
 import GhostLang.Node.State ( State (..)
@@ -138,6 +141,10 @@ runNamedPattern' state NamedPattern {..} pattern = do
 listPatterns :: State -> IO [Resource]
 listPatterns state = map (Resource . patternUrl) <$> allPatterns state
 
+-- | List the global counter.
+getGlobalCounter :: State -> IO PatternCounter
+getGlobalCounter state = fromCounter <$> readTVarIO (globalCounter state)
+
 -- | List pattern execution status.
 patternStatus :: State -> ResourceKey -> IO (Maybe PatternStatus)
 patternStatus state key = do
@@ -170,3 +177,13 @@ fromPatternList label patterns =
     where 
       matchingLabel (label', _, _) = label' == label
       lastInTuple (_, _, pattern)  = Just pattern
+
+-- | Convert from the internal counter format
+fromCounter :: Counter -> PatternCounter
+fromCounter Counter {..} =
+    PatternCounter { totalTimeS    = realToFrac patternExecTime
+                   , httpGetTimeS  = realToFrac httpGETExecTime
+                   , httpGetBytes  = httpGETBytes
+                   , httpPutTimeS  = 0
+                   , httpPutBytes  = 0
+                   }

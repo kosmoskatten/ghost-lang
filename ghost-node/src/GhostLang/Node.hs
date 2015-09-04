@@ -23,6 +23,7 @@ import GhostLang.Node.Flow ( getHttpConfig
                            , loadProgram
                            , runNamedPattern
                            , listPatterns
+                           , getGlobalCounter
                            , patternStatus
                            )
 import GhostLang.Node.State ( State (..)
@@ -95,6 +96,11 @@ route state req =
        | requestMethod req == "GET" -> handlePatternList state
        | otherwise                  -> handleNotAllowed ["GET"]
 
+    -- Route a request for listing the global counter.
+     ["pattern", "counter"]
+       | requestMethod req == "GET" -> handleGlobalCounter state
+       | otherwise                  -> handleNotAllowed ["GET"]
+
      -- Route a request for listing the execution status for the
      -- selected pattern.
      ["pattern", key, "status"]
@@ -154,6 +160,10 @@ handleNamedPatternRun state request key = do
 -- response.
 handlePatternList :: State -> IO Response
 handlePatternList state = jsonResponse status200 <$> listPatterns state
+
+-- | List the global counter. Always 200 as response.
+handleGlobalCounter :: State -> IO Response
+handleGlobalCounter state = jsonResponse status200 <$> getGlobalCounter state
 
 -- | List the execution status for the selected pattern. If the
 -- pattern is found response code 200 is returned. If the pattern not

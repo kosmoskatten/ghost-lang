@@ -8,6 +8,7 @@ module GhostLang.API
     , ExecParams (..)
     , NamedPattern (..)
     , PatternStatus (..)
+    , PatternCounter (..)
     , getHttpConfig
     , setHttpConfig
     , loadProgram

@@ -99,9 +99,9 @@ updHttpGETCounters' d bytes status c@Counter {..} =
     let incSuccCount = if status == Success then 1 else 0
         incFailCount = if status == Failure then 1 else 0
     in c { httpGETExecTime = httpGETExecTime + d
-         , httpGETBytes    = bytes
-         , httpGETSuccess  = incSuccCount
-         , httpGETFailures = incFailCount
+         , httpGETBytes    = httpGETBytes    + bytes
+         , httpGETSuccess  = httpGETSuccess  + incSuccCount
+         , httpGETFailures = httpGETFailures + incFailCount
          }
 
 -- | Get the value for the procedure call counter for procedure 'p'.
