@@ -10,6 +10,8 @@ module GhostLang.FlowTests
     , runExistingPatternTest
     , patternStatusNonExistingPatternTest
     , patternStatusFailingPatternTest
+    , patternStatusCompletedPatternTest
+    , patternStatusStillRunningTest
     ) where
 
 import Control.Concurrent (threadDelay)
@@ -191,6 +193,45 @@ patternStatusFailingPatternTest = do
     Just status -> do
       True @=? completed status
       True @=? failed status
+    Nothing     -> assertBool "Shall give a Just value" False
+
+-- | List the pattern status for a pattern that has successfully
+-- terminated.
+patternStatusCompletedPatternTest :: Assertion
+patternStatusCompletedPatternTest = do
+  state      <- initState
+  Right url  <- withSourceProgram "Main.gl" compilableProgram $
+                  loadProgram state
+  Right url' <- runNamedPattern state (toResourceKey url) $ 
+                  namedPattern "delay2"
+
+  -- | Short waiting time, 1/10 s, before querying the status.
+  threadDelay 100000
+  result <- patternStatus state (toResourceKey url')
+
+  case result of
+    Just status -> do
+      True  @=? completed status
+      False @=? failed status
+    Nothing     -> assertBool "Shall give a Just value" False
+
+-- | List the pattern status for a pattern that still is running.
+patternStatusStillRunningTest :: Assertion
+patternStatusStillRunningTest = do
+  state      <- initState
+  Right url  <- withSourceProgram "Main.gl" compilableProgram $
+                  loadProgram state
+  Right url' <- runNamedPattern state (toResourceKey url) $ 
+                  namedPattern "delay1"
+
+  -- | Short waiting time, 1/10 s, before querying the status.
+  threadDelay 100000
+  result <- patternStatus state (toResourceKey url')
+
+  case result of
+    Just status -> do
+      False @=? completed status
+      False @=? failed status
     Nothing     -> assertBool "Shall give a Just value" False
 
 emptyService :: Service

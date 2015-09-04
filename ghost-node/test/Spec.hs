@@ -12,6 +12,8 @@ import GhostLang.FlowTests ( initStateTest
                            , runExistingPatternTest
                            , patternStatusNonExistingPatternTest
                            , patternStatusFailingPatternTest
+                           , patternStatusCompletedPatternTest
+                           , patternStatusStillRunningTest
                            )
 import Test.Framework (Test, defaultMain, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -35,6 +37,10 @@ testSuite =
                  patternStatusNonExistingPatternTest
       , testCase "PatternStatusFailingPattern"
                  patternStatusFailingPatternTest
+      , testCase "PatternStatusCompletedPatternTest"
+                 patternStatusCompletedPatternTest
+      , testCase "PatternStatusStillRunningTest"
+                 patternStatusStillRunningTest
       ]
     ]
 
