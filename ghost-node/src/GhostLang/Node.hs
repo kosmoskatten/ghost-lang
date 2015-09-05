@@ -24,6 +24,7 @@ import GhostLang.Node.Flow ( getHttpConfig
                            , runNamedPattern
                            , listPatterns
                            , getGlobalCounter
+                           , getPatternCounter
                            , patternStatus
                            )
 import GhostLang.Node.State ( State (..)
@@ -96,9 +97,14 @@ route state req =
        | requestMethod req == "GET" -> handlePatternList state
        | otherwise                  -> handleNotAllowed ["GET"]
 
-    -- Route a request for listing the global counter.
+     -- Route a request for listing the global counter.
      ["pattern", "counter"]
        | requestMethod req == "GET" -> handleGlobalCounter state
+       | otherwise                  -> handleNotAllowed ["GET"]
+
+     -- Route a request for listing a pattern specific counter.
+     ["pattern", key, "counter"]
+       | requestMethod req == "GET" -> handlePatternCounter state key
        | otherwise                  -> handleNotAllowed ["GET"]
 
      -- Route a request for listing the execution status for the
@@ -165,14 +171,23 @@ handlePatternList state = jsonResponse status200 <$> listPatterns state
 handleGlobalCounter :: State -> IO Response
 handleGlobalCounter state = jsonResponse status200 <$> getGlobalCounter state
 
+-- | List the counter for the selected pattern. If the pattern is
+-- found response code 200 is returned. If the pattern not is found
+-- 404 is returned.
+handlePatternCounter :: State -> ResourceKey -> IO Response
+handlePatternCounter state key =
+  maybe (notFound $ "Not found pattern key: " `BS.append` encodeUtf8 key)
+        (jsonResponse status200)
+          <$> getPatternCounter state key
+
 -- | List the execution status for the selected pattern. If the
 -- pattern is found response code 200 is returned. If the pattern not
 -- is found 404 is returned.
 handlePatternStatus :: State -> ResourceKey -> IO Response
-handlePatternStatus state key = do
-  maybe (notFound $ "Not found program key: " `BS.append` encodeUtf8 key)
+handlePatternStatus state key =
+  maybe (notFound $ "Not found pattern key: " `BS.append` encodeUtf8 key)
         (jsonResponse status200)
-            <$> patternStatus state key
+          <$> patternStatus state key
 
 handleNotAllowed :: [ByteString] -> IO Response
 handleNotAllowed allow = 

@@ -11,6 +11,7 @@ module GhostLang.Node.Flow
     , loadProgram
     , listPatterns
     , getGlobalCounter
+    , getPatternCounter
     , patternStatus
     ) where
 
@@ -121,19 +122,20 @@ runNamedPattern state key namedPattern@NamedPattern {..} = do
 -- | Help function to run a named pattern. Do the core stuff.
 runNamedPattern' :: State -> NamedPattern -> GhostPattern -> IO Resource
 runNamedPattern' state NamedPattern {..} pattern = do
-  localCounter <- newTVarIO emptyCounter
-  networkConf' <- readTVarIO $ networkConf state
-  key          <- genId
+  localCounter' <- newTVarIO emptyCounter
+  networkConf'  <- readTVarIO $ networkConf state
+  key           <- genId
                                                   
   let networkConf'' = networkConf' { srcIpAddress = srcIp execParams }
       url           = "/pattern/" `T.append` key
 
-  async_' <- async $ runPattern pattern [localCounter, globalCounter state]
+  async_' <- async $ runPattern pattern [localCounter', globalCounter state]
                                 networkConf'' (shallTrace execParams)
                                 (logger state)
 
   insertPattern state key $ PatternRepr { patternUrl   = url
                                         , ghostPattern = pattern
+                                        , localCounter = localCounter'
                                         , async_       = async_' }
   return Resource { resourceUrl = url }
 
@@ -144,6 +146,14 @@ listPatterns state = map (Resource . patternUrl) <$> allPatterns state
 -- | List the global counter.
 getGlobalCounter :: State -> IO PatternCounter
 getGlobalCounter state = fromCounter <$> readTVarIO (globalCounter state)
+
+-- | List the counter from a selected pattern.
+getPatternCounter :: State -> ResourceKey -> IO (Maybe PatternCounter)
+getPatternCounter state key = 
+  maybe (return Nothing) fromCounter' =<< lookupPattern state key
+      where 
+        fromCounter' :: PatternRepr -> IO (Maybe PatternCounter)
+        fromCounter' p = Just . fromCounter <$> (readTVarIO $ localCounter p)
 
 -- | List pattern execution status.
 patternStatus :: State -> ResourceKey -> IO (Maybe PatternStatus)

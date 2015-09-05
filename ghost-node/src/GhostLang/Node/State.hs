@@ -53,6 +53,7 @@ type ProgramMap = Map.Map ResourceKey ProgramRepr
 data PatternRepr =
     PatternRepr { patternUrl   :: !Text
                 , ghostPattern :: !GhostPattern 
+                , localCounter :: TVar Counter
                 , async_       :: Async ()
                 }
 
