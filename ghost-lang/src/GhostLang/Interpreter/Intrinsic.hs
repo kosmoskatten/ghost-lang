@@ -5,7 +5,6 @@ module GhostLang.Interpreter.Intrinsic
     ) where
 
 import Control.Concurrent (threadDelay)
-import Control.Monad (void)
 import GHC.Generics (Generic)
 import GhostLang.Interpreter.InstructionSet (InstructionSet (..))
 import GhostLang.Interpreter.InterpreterM ( InterpreterM
@@ -17,11 +16,7 @@ import GhostLang.Interpreter.InterpreterM ( InterpreterM
                                           , updHttpGETCounters
                                           , timedAction
                                           , liftIO )
-import GhostLang.Interpreter.WebClient ( httpGet
-                                       , eagerConsumer
-                                       , pacedConsumer
-                                       , initVirtualBuffer
-                                       )
+import GhostLang.Interpreter.WebClient (httpGet)
 import GhostLang.RuntimeState ( RuntimeState (..)
                               , NetworkConfiguration (..)
                               )
@@ -52,31 +47,24 @@ instance InstructionSet IntrinsicSet where
       logString $ printf "Delay %d us" duration'
       liftIO $ threadDelay duration'
 
-    -- | Execute a http GET command. No paceing.
-    exec (Http GET _ payload Nothing) = do
-      url <- mkGetUrl payload
+    -- | Execute a http GET command.
+    exec (Http GET _ payload pace) = do
+      url   <- mkGetUrl payload
+      mgr   <- connectionMgr <$> get
+      pace' <- maybePace pace
 
       logString $ printf "Http GET %s" url
       ((status, bytes), d) <- timedAction $ do
-        mgr <- connectionMgr <$> get
-        liftIO $ httpGet mgr url eagerConsumer
-      updHttpGETCounters d bytes status
-
-    -- | Execute a http GET command with paceing.
-    exec (Http GET _ payload (Just pace)) = do
-      url <- mkGetUrl payload
-      pace' <- evalPace pace
-
-      logString $ printf "Http GET %s, pace %ld bytes per sec" url pace'
-      ((status, bytes), d) <- timedAction $ do
-        mgr    <- connectionMgr <$> get
-        buffer <- liftIO $ initVirtualBuffer pace'
-        liftIO $ httpGet mgr url (pacedConsumer buffer)
+        liftIO $ httpGet mgr url pace'
       updHttpGETCounters d bytes status
 
     exec (Http POST _ _ _) = undefined
 
     exec (Http PUT _ _ _) = undefined
+
+maybePace :: Maybe Pace -> InterpreterM (Maybe Int)
+maybePace (Just pace) = Just . fromIntegral <$> evalPace pace
+maybePace Nothing     = return Nothing
 
 mkGetUrl :: Payload -> InterpreterM String
 mkGetUrl payload = do

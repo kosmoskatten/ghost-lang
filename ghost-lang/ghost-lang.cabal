@@ -71,12 +71,15 @@ library
                      , conduit-combinators
                      , containers
                      , filepath
+                     , ghost-conduit
                      , ghost-logger
                      , http-client
+                     , http-conduit
                      , http-types
                      , mtl
                      , network
                      , parsec
+                     , resourcet
                      , stm
                      , text
                      , time
