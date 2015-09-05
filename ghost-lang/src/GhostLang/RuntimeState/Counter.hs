@@ -9,6 +9,7 @@ module GhostLang.RuntimeState.Counter
     , incConcCmds'
     , incProcCalls'
     , updHttpGETCounters'
+    , updHttpPUTCounters'
     , getProcCalls
     , getTotalProcCalls
     , incPatternRuns'
@@ -51,6 +52,13 @@ data Counter =
             , httpGETBytes    :: {-# UNPACK #-} !Int64
             , httpGETSuccess  :: {-# UNPACK #-} !Int64
             , httpGETFailures :: {-# UNPACK #-} !Int64
+            -- ^ Counters for http GET.
+
+            , httpPUTExecTime :: !NominalDiffTime
+            , httpPUTBytes    :: {-# UNPACK #-} !Int64
+            , httpPUTSuccess  :: {-# UNPACK #-} !Int64
+            , httpPUTFailures :: {-# UNPACK #-} !Int64
+            -- ^ Counters for http PUT.
             }
     deriving Show
 
@@ -67,6 +75,10 @@ emptyCounter =
             , httpGETBytes    = 0
             , httpGETSuccess  = 0
             , httpGETFailures = 0
+            , httpPUTExecTime = toEnum 0
+            , httpPUTBytes    = 0
+            , httpPUTSuccess  = 0
+            , httpPUTFailures = 0
             }
 
 -- | Increase the pattern execution time.
@@ -103,6 +115,18 @@ updHttpGETCounters' d bytes status c@Counter {..} =
          , httpGETSuccess  = httpGETSuccess  + incSuccCount
          , httpGETFailures = httpGETFailures + incFailCount
          }
+
+-- | Update counters for http PUT.
+updHttpPUTCounters' :: NominalDiffTime -> Int64
+                    -> HttpStatus -> Counter -> Counter
+updHttpPUTCounters' d bytes status c@Counter {..} =
+    let incSuccCount = if status == Success then 1 else 0
+        incFailCount = if status == Failure then 1 else 0
+    in c { httpPUTExecTime = httpPUTExecTime + d
+         , httpPUTBytes    = httpPUTBytes    + bytes
+         , httpPUTSuccess  = httpPUTSuccess  + incSuccCount
+         , httpPUTFailures = httpPUTFailures + incFailCount
+         }    
 
 -- | Get the value for the procedure call counter for procedure 'p'.
 getProcCalls :: Text -> Counter -> Int64

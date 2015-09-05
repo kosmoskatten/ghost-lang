@@ -12,6 +12,7 @@ module GhostLang.Interpreter.InterpreterM
     , incPatternRuns
     , incProcCalls
     , updHttpGETCounters
+    , updHttpPUTCounters
 
     -- Measure the time of an action:
     , timedAction
@@ -70,6 +71,7 @@ import GhostLang.RuntimeState ( Counter (..)
                               , incPatternRuns'
                               , incProcCalls'
                               , updHttpGETCounters'
+                              , updHttpPUTCounters'
                               )
 import GhostLang.Types ( Value (..)
                        , TimeUnit (..)
@@ -128,6 +130,11 @@ incProcCalls name = updateCounter $ incProcCalls' name
 updHttpGETCounters :: NominalDiffTime -> Int64 -> HttpStatus -> InterpreterM ()
 updHttpGETCounters d bytes status =
     updateCounter $ updHttpGETCounters' d bytes status
+
+-- | Update the counters for http PUT.
+updHttpPUTCounters :: NominalDiffTime -> Int64 -> HttpStatus -> InterpreterM ()
+updHttpPUTCounters d bytes status =
+    updateCounter $ updHttpPUTCounters' d bytes status
 
 -- | Measure the time of an action.
 timedAction :: InterpreterM a -> InterpreterM (a, NominalDiffTime)
