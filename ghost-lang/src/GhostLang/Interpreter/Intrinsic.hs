@@ -14,9 +14,10 @@ import GhostLang.Interpreter.InterpreterM ( InterpreterM
                                           , evalPace
                                           , logString
                                           , updHttpGETCounters
+                                          , updHttpPUTCounters
                                           , timedAction
                                           , liftIO )
-import GhostLang.Interpreter.WebClient (httpGet)
+import GhostLang.Interpreter.WebClient (httpGet, httpPut)
 import GhostLang.RuntimeState ( RuntimeState (..)
                               , NetworkConfiguration (..)
                               )
@@ -54,13 +55,21 @@ instance InstructionSet IntrinsicSet where
       pace' <- maybePace pace
 
       logString $ printf "Http GET %s" url
-      ((status, bytes), d) <- timedAction $ do
-        liftIO $ httpGet mgr url pace'
+      ((status, bytes), d) <- timedAction $ liftIO $ httpGet mgr url pace'
       updHttpGETCounters d bytes status
 
-    exec (Http POST _ _ _) = undefined
+    -- | Execute a http PUT command.
+    exec (Http PUT _ payload pace) = do
+      url <- mkPutUrl pace
+      mgr <- connectionMgr <$> get
+      dc  <- dataChunk <$> get
+      pl  <- fromIntegral <$> evalPayload payload
 
-    exec (Http PUT _ _ _) = undefined
+      logString $ printf "Http PUT %s" url
+      ((status, bytes), d) <- timedAction $ liftIO $ httpPut mgr url dc pl
+      updHttpPUTCounters d bytes status
+
+    exec (Http POST _ _ _) = undefined
 
 maybePace :: Maybe Pace -> InterpreterM (Maybe Int)
 maybePace (Just pace) = Just . fromIntegral <$> evalPace pace
@@ -72,3 +81,15 @@ mkGetUrl payload = do
   nc   <- networkConfiguration <$> get
   return $! printf "%s:%d/download?size=%ld" (httpServiceAddress nc)
                                              (httpServicePort nc) size
+
+mkPutUrl :: Maybe Pace -> InterpreterM String
+mkPutUrl mpace = do
+  nc   <- networkConfiguration <$> get
+  pace <- maybePace mpace
+  case pace of
+    Just pace' ->
+      return $! printf "%s:%d/upload?pace=%d" (httpServiceAddress nc)
+                                              (httpServicePort nc) pace'
+    Nothing    ->
+      return $! printf "%s:%d/upload" (httpServiceAddress nc)
+                                      (httpServicePort nc)

@@ -3,6 +3,7 @@ module GhostLang.Interpreter
     , runPattern'
     ) where
 
+import GhostLang.Conduit (DataChunk)
 import GhostLang.Interpreter.InterpreterM
 import GhostLang.Interpreter.Intrinsic
 import GhostLang.Interpreter.InstructionSet
@@ -25,14 +26,16 @@ runPattern' :: InstructionSet a
             => Pattern a 
             -> [TVar Counter] 
             -> NetworkConfiguration
+            -> DataChunk
             -> Bool
             -> GLog
             -> IO ()
-runPattern' p cs nw t glog = do
+runPattern' p cs nw dc t glog = do
   mgr <- newManager managerSettings
   let state = RuntimeState { counters             = cs
                            , networkConfiguration = nw
                            , connectionMgr        = mgr
+                           , dataChunk            = dc
                            , shallTrace           = t
                            , logger               = glog }
   runInterpreter state $ execPattern p

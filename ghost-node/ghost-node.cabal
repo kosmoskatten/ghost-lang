@@ -23,6 +23,7 @@ executable ghost-node
                      , bytestring
                      , containers
                      , ghost-api
+                     , ghost-conduit
                      , ghost-lang
                      , ghost-logger
                      , http-types
@@ -49,6 +50,7 @@ test-suite ghost-node-test
                      , directory
                      , filepath
                      , ghost-api
+                     , ghost-conduit
                      , ghost-lang
                      , ghost-logger
                      , HUnit

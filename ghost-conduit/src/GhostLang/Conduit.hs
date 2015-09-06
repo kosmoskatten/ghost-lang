@@ -61,8 +61,8 @@ dataStream DataChunk {..} n = go n
 
 -- | A shaping conduit that emulates a buffer, with a buffer reading
 -- pace of 'pace' bytes per second.
-shape :: MonadResource m => Int -> Conduit ByteString m ByteString
-shape pace = consumeStream =<< (liftResourceT $ initVirtualBuffer pace)
+shape :: MonadIO m => Int -> Conduit ByteString m ByteString
+shape pace = consumeStream =<< (initVirtualBuffer pace)
     where
       consumeStream vb = do
         full <- isFull vb

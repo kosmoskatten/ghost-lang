@@ -81,7 +81,7 @@ data PatternStatus = PatternStatus { completed   :: !Bool
 data PatternCounter = PatternCounter { totalTimeS   :: !Double
                                      , httpGetTimeS :: !Double
                                      , httpGetBytes :: !Int64
-                                     , httpPutTimeS :: !Int64
+                                     , httpPutTimeS :: !Double
                                      , httpPutBytes :: !Int64
                                      }
     deriving (Eq, Generic, Show)

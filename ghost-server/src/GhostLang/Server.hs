@@ -8,10 +8,13 @@ import Data.ByteString.Builder (Builder, byteString)
 import GhostLang.Conduit ( Conduit
                          , DataChunk
                          , Flush (..)
+                         , ($$)
                          , ($=)
                          , awaitForever
+                         , byteCounter
                          , dataStream
                          , genDataChunk
+                         , shape
                          , yield
                          )
 import GhostLang.GLog ( GLog
@@ -55,6 +58,10 @@ route state request = do
     "/download"
         | requestMethod request == "GET" -> handleDownload state request
         | otherwise                      -> handleNotAllowed ["GET"]
+
+    "/upload"
+        | requestMethod request == "PUT" -> handleUpload state request
+        | otherwise                      -> handleNotAllowed ["PUT"]
     _                                    -> return notFound
 
 -- | Handle a download request. The size of the request is attached as
@@ -71,6 +78,15 @@ handleDownload state request =
                      [("Content-Type", "text/plain")]
                      "Missing or malformed size parameter"
 
+handleUpload :: State -> Request -> IO Response
+handleUpload state request = do
+  bytes <- 
+      case requestedPace request of
+        Just pace -> sourceRequestBody request $= shape pace $$ byteCounter
+        Nothing   -> sourceRequestBody request $$ byteCounter
+  logString (logger state) $ printf "DEBUG: received %d bytes" bytes
+  return $ responseLBS status200 [] ""
+
 -- | Handle non allowed method by returning status 405.
 handleNotAllowed :: [ByteString] -> IO Response
 handleNotAllowed allow = 
@@ -84,8 +100,15 @@ notFound = responseLBS status404
 
 -- | Get the requested size from the query parameter named "size".
 requestedSize :: Request -> Maybe Int
-requestedSize req = do
-  val  <- lookup "size" $ queryString req
+requestedSize = requestedIntValue "size"
+
+-- | Get the requested pace from the query parameter named "pace".
+requestedPace :: Request -> Maybe Int
+requestedPace = requestedIntValue "pace"
+
+requestedIntValue :: ByteString -> Request -> Maybe Int
+requestedIntValue str req = do
+  val  <- lookup str $ queryString req
   val' <- BS.unpack <$> val -- Also evaluating second level of Maybe
   maybeInt val'
 

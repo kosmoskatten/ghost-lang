@@ -31,6 +31,7 @@ import GhostLang ( GhostProgram
                  , emptyCounter
                  , emptyNetworkConfiguration 
                  )
+import GhostLang.Conduit (DataChunk, genDataChunk)
 import GhostLang.GLog (GLog, newStdoutGLog)
 
 import qualified Data.Map.Strict as Map
@@ -66,6 +67,7 @@ data State = State { programMap    :: TVar ProgramMap
                    , patternMap    :: TVar PatternMap
                    , networkConf   :: TVar NetworkConfiguration
                    , globalCounter :: TVar Counter
+                   , dataChunk     :: !DataChunk
                    , logger        :: !GLog }
 
 -- | Initialize the state.
@@ -74,6 +76,7 @@ initState = State <$> newTVarIO Map.empty
                   <*> newTVarIO Map.empty
                   <*> newTVarIO emptyNetworkConfiguration
                   <*> newTVarIO emptyCounter
+                  <*> genDataChunk 32768
                   <*> newStdoutGLog
 
 -- | Store a compiled ghost-program into the program map.

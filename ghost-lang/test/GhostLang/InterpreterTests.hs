@@ -8,6 +8,7 @@ module GhostLang.InterpreterTests
     ) where
 
 import Control.Concurrent.STM (newTVarIO, readTVarIO)
+import GhostLang.Conduit (genDataChunk)
 import GhostLang.GLog (newEmptyGLog)
 import GhostLang.RuntimeState ( Counter (..)
                               , emptyNetworkConfiguration
@@ -35,7 +36,8 @@ oneLevelCallNoParamsPattern = do
                   ]) []
           ]
   inpC    <- newTVarIO emptyCounter
-  runPattern' p [inpC] emptyNetworkConfiguration False =<< newEmptyGLog
+  dc      <- genDataChunk 128
+  runPattern' p [inpC] emptyNetworkConfiguration dc False =<< newEmptyGLog
   counter <- readTVarIO inpC
 
   1 @=? getProcCalls "pr1" counter
@@ -53,7 +55,8 @@ oneLevelCallOneParamPattern = do
                   ]) [ Literal 5 ]
           ]
   inpC    <- newTVarIO emptyCounter
-  runPattern' p [inpC] emptyNetworkConfiguration False =<< newEmptyGLog
+  dc      <- genDataChunk 128
+  runPattern' p [inpC] emptyNetworkConfiguration dc False =<< newEmptyGLog
   counter <- readTVarIO inpC
 
   1 @=? getProcCalls "pr1" counter
@@ -77,7 +80,8 @@ localScopeOneParamPattern = do
               [ Call proc1 [ Literal 5 ]
               ]
   inpC    <- newTVarIO emptyCounter
-  runPattern' p [inpC] emptyNetworkConfiguration False =<< newEmptyGLog
+  dc      <- genDataChunk 128
+  runPattern' p [inpC] emptyNetworkConfiguration dc False =<< newEmptyGLog
   counter <- readTVarIO inpC
 
   1 @=? getProcCalls "pr1" counter
@@ -102,7 +106,8 @@ twoLevelTwoParamsPattern = do
               [ Call proc1 [ Literal 5, Literal 10 ]
               ] :: Pattern TestInstrSet
   inpC    <- newTVarIO emptyCounter
-  runPattern' p [inpC] emptyNetworkConfiguration False =<< newEmptyGLog
+  dc      <- genDataChunk 128
+  runPattern' p [inpC] emptyNetworkConfiguration dc False =<< newEmptyGLog
   counter <- readTVarIO inpC
 
   1  @=? getProcCalls "pr1" counter
@@ -133,7 +138,8 @@ longChainTwoParamsPattern = do
               [ Call proc1 [ Literal 5, Literal 10 ]
               ] :: Pattern TestInstrSet
   inpC    <- newTVarIO emptyCounter
-  runPattern' p [inpC] emptyNetworkConfiguration False =<< newEmptyGLog
+  dc      <- genDataChunk 128
+  runPattern' p [inpC] emptyNetworkConfiguration dc False =<< newEmptyGLog
   counter <- readTVarIO inpC
 
   1  @=? getProcCalls "pr1" counter

@@ -130,7 +130,9 @@ runNamedPattern' state NamedPattern {..} pattern = do
       url           = "/pattern/" `T.append` key
 
   async_' <- async $ runPattern pattern [localCounter', globalCounter state]
-                                networkConf'' (shallTrace execParams)
+                                networkConf'' 
+                                (dataChunk state)
+                                (shallTrace execParams)
                                 (logger state)
 
   insertPattern state key $ PatternRepr { patternUrl   = url
@@ -194,6 +196,6 @@ fromCounter Counter {..} =
     PatternCounter { totalTimeS    = realToFrac patternExecTime
                    , httpGetTimeS  = realToFrac httpGETExecTime
                    , httpGetBytes  = httpGETBytes
-                   , httpPutTimeS  = 0
-                   , httpPutBytes  = 0
+                   , httpPutTimeS  = realToFrac httpPUTExecTime
+                   , httpPutBytes  = httpPUTBytes
                    }

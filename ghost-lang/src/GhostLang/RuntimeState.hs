@@ -10,6 +10,7 @@ module GhostLang.RuntimeState
     ) where
 
 import Control.Concurrent.STM (TVar)
+import GhostLang.Conduit (DataChunk, genDataChunk)
 import GhostLang.GLog (GLog, newEmptyGLog)
 import GhostLang.RuntimeState.Counter
 import Network.HTTP.Client ( Manager
@@ -31,6 +32,10 @@ data RuntimeState =
                  -- ^ A connection manager local for this state
                  -- instance.
 
+                 , dataChunk            :: !DataChunk
+                 -- ^ A data chunk used for upload payload data
+                 -- generation.
+
                  , shallTrace           :: !Bool
                  -- ^ The execution mode.
 
@@ -51,16 +56,18 @@ data NetworkConfiguration =
                          -- connections in the flow (if any).
                          }
 
--- | Create a default setup runtime state. Should only be used by test
--- codes.
+-- | Create a default setup runtime state. NOTE: Should only be used by test
+-- codes!!!
 defaultRuntimeState :: IO RuntimeState
 defaultRuntimeState = do
   mgr  <- newManager defaultManagerSettings
+  dc   <- genDataChunk 128 -- Just some small size.
   glog <- newEmptyGLog
   return $ RuntimeState 
              { counters             = []
              , networkConfiguration = emptyNetworkConfiguration
              , connectionMgr        = mgr
+             , dataChunk            = dc
              , shallTrace           = False
              , logger               = glog }
 

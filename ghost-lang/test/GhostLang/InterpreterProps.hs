@@ -10,6 +10,7 @@ import Control.Monad (forM)
 import Data.List (foldl')
 import Data.Text (Text)
 import GHC.Int (Int64)
+import GhostLang.Conduit (genDataChunk)
 import GhostLang.GLog (newEmptyGLog)
 import GhostLang.InterpreterGenerators ( SimpleSequencePattern (..)
                                        , ManySimpleSequencePatterns (..)
@@ -37,7 +38,8 @@ simpleSequencePattern :: SimpleSequencePattern -> Property
 simpleSequencePattern (SimpleSequencePattern p) =
     monadicIO $ do
       inpC    <- run (newTVarIO emptyCounter)
-      run (runPattern' p [inpC] emptyNetworkConfiguration False
+      dc      <- run (genDataChunk 128)
+      run (runPattern' p [inpC] emptyNetworkConfiguration dc False
              =<< newEmptyGLog)
       counter <- run (readTVarIO inpC)
 
@@ -67,10 +69,11 @@ manySimpleSequencePatterns :: ManySimpleSequencePatterns -> Property
 manySimpleSequencePatterns (ManySimpleSequencePatterns ps) =
     monadicIO $ do
       globalC <- run (newTVarIO emptyCounter)
+      dc      <- run (genDataChunk 128)
       locals  <- run (forM ps $ \p -> do
                         localC <- newTVarIO emptyCounter
                         runPattern' p [globalC, localC] 
-                                    emptyNetworkConfiguration False
+                                    emptyNetworkConfiguration dc False
                                       =<< newEmptyGLog
                         return =<< readTVarIO localC
                      )
@@ -97,7 +100,8 @@ nonNestedLoopPattern :: NonNestedLoopPattern -> Property
 nonNestedLoopPattern (NonNestedLoopPattern p) =
     monadicIO $ do
       inpC    <- run (newTVarIO emptyCounter)
-      run (runPattern' p [inpC] emptyNetworkConfiguration False
+      dc      <- run (genDataChunk 128)
+      run (runPattern' p [inpC] emptyNetworkConfiguration dc False
              =<< newEmptyGLog)
       counter <- run (readTVarIO inpC)
 
@@ -121,7 +125,8 @@ nonNestedConcPattern :: NonNestedConcPattern -> Property
 nonNestedConcPattern (NonNestedConcPattern p) =
     monadicIO $ do
       inpC    <- run (newTVarIO emptyCounter)
-      run (runPattern' p [inpC] emptyNetworkConfiguration False
+      dc      <- run (genDataChunk 128)
+      run (runPattern' p [inpC] emptyNetworkConfiguration dc False
              =<< newEmptyGLog)
       counter <- run (readTVarIO inpC)
 

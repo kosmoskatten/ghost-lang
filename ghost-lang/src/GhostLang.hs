@@ -15,6 +15,7 @@ module GhostLang
     ) where
 
 import GhostLang.Compiler (compileAndLink)
+import GhostLang.Conduit (DataChunk)
 import GhostLang.Interpreter (IntrinsicSet, runPattern')
 import GhostLang.Types ( Label
                        , Weight
@@ -44,7 +45,8 @@ toPatternList (Program xs) = map extrTuple xs
 -- configuration and a runtime mode.
 runPattern :: GhostPattern 
            -> [TVar Counter] 
-           -> NetworkConfiguration 
+           -> NetworkConfiguration
+           -> DataChunk
            -> Bool
            -> GLog
            -> IO ()
