@@ -60,6 +60,7 @@ library
                        GhostLang.Interpreter.InstructionSet
                        GhostLang.Interpreter.InterpreterM
                        GhostLang.Interpreter.Intrinsic
+                       GhostLang.Interpreter.Random
                        GhostLang.Interpreter.Scope
                        GhostLang.Interpreter.WebClient
                        GhostLang.RuntimeState
@@ -78,6 +79,7 @@ library
                      , http-conduit
                      , http-types
                      , mtl
+                     , mwc-random
                      , network
                      , parsec
                      , resourcet
