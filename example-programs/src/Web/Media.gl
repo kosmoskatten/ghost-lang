@@ -1,0 +1,16 @@
+/*
+ * Procedures for internet media.
+ */
+module Web.Media
+
+/*
+ * Stream a video clip.
+ * 
+ * INPUT: 
+ * streamSizeMB - specify the size of the stream in MB.
+ * paceMbps     - specify the buffer pace in mbps.
+ */
+procedure webMedia_streamVideoPaced(streamSizeMB, paceMbps)
+{
+  Http GET [] streamSizeMB MB paceMbps mbps
+}

@@ -1,0 +1,49 @@
+/*
+ * A collection of common ghost-lang patterns.
+ */
+module Main
+
+// Import the generic Web.Page module
+import Web.Page
+
+// Import the generic Web.Media module
+import Web.Media
+
+/*
+ * A pattern that is describing a behavior for browsing www news paper
+ * pages. The behavior is starting by loading a frontpage, and later
+ * following a few links from the frontpage.
+ */
+pattern newsPageReader with weight 1
+{
+  // TODO: Shall be updated once the random value functions are available.
+
+  // Load the frontpage, which is containing html, external js,
+  // external css and a parameterized number of images.
+  webPage_loadNewsPaperPage(literal(50), literal(400)),
+
+  // Follow a few links. Those pages typically contain fewer but
+  // larger images.
+  loop literal(3)
+  {
+    Delay literal(15) sec,
+    webPage_loadNewsPaperPage(literal(12), literal(600))
+  }
+}
+
+/*
+ * A pattern that is describing a behavior for viewing short video
+ * clips. The behavior is started by loading a frontpage, and later
+ * viewing a few short clips form the frontpage.
+ */
+pattern shortVideoClipViewer with weight 1
+{
+  // TODO: Shall be updated once the random value functions are available.
+
+  // Load the frontpage, which is containing html, external js,
+  // external css and a parameterized number of images.
+  //webPage_loadNewsPaperPage(literal(30), literal(400)),
+
+  // Stream a buffer paced video stream.
+  webMedia_streamVideoPaced(literal(25), literal(10))
+}

@@ -1,0 +1,34 @@
+/*
+ * Procedures for web page access.
+ */
+module Web.Page
+
+/*
+ * Load the resources for a newspaper style of page.
+ * 
+ * INPUT:
+ * numImages   - specify the number of images to fetch.
+ * imageSizeKB - specify the size in KB for the images.
+ */
+procedure webPage_loadNewsPaperPage(numImages, imageSizeKB)
+{
+  // TODO: Shall be updated once the random value functions are available.
+
+  // TODO: Shall be updated once the bug of not propagating stored
+  // values to concurrent sections is fixed.
+  
+  // Fetch HTML page ...
+  Http GET [] literal(200) KB,
+
+  // Read external js ...
+  Http GET [] literal(500) KB,
+
+  // Fetch external css ...
+  Http GET [] literal(30) KB,
+
+  // Iterate to fetch the number of images.
+  loop numImages
+  {
+    Http GET [] imageSizeKB KB
+  }
+}
