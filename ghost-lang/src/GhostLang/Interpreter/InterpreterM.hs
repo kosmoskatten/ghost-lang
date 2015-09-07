@@ -2,6 +2,7 @@
 module GhostLang.Interpreter.InterpreterM
     ( InterpreterM (..)
     , runInterpreter
+    , runInterpreterScoped
     , runInterpreterTest
 
       -- API towards ghost-lang interpretation. Counters:
@@ -92,8 +93,13 @@ newtype InterpreterM a =
 -- | Run an InterpreterM action. The action will be supplied a runtime
 -- state and an empty scope.
 runInterpreter :: RuntimeState -> InterpreterM () -> IO ()
-runInterpreter state interpreter =
-  evalStateT (runReaderT (extractInterpreterM interpreter) emptyScope) state
+runInterpreter = runInterpreterScoped emptyScope
+
+-- | Run the interpreter with explicit scope. Necessary for concurrent
+-- sections.
+runInterpreterScoped :: Scope -> RuntimeState -> InterpreterM () -> IO ()
+runInterpreterScoped scope state interpreter =
+  evalStateT (runReaderT (extractInterpreterM interpreter) scope) state
 
 -- | Run an interpreterM action for testing purposes. Run with an
 -- empty counter set beside the setting of

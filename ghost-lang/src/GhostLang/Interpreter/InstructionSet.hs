@@ -8,7 +8,7 @@ import Control.Concurrent.Async (async, wait)
 import Control.Monad (replicateM_)
 import Data.Maybe (fromJust)
 import GhostLang.Interpreter.InterpreterM ( InterpreterM
-                                          , runInterpreter
+                                          , runInterpreterScoped
                                           , incInstrInvoked
                                           , incPatternExecTime
                                           , incPatternRuns
@@ -23,7 +23,7 @@ import GhostLang.Interpreter.InterpreterM ( InterpreterM
                                           , local
                                           , liftIO
                                           )
-import GhostLang.Interpreter.Scope (fromList, lookup)
+import GhostLang.Interpreter.Scope (Scope, fromList, lookup)
 import GhostLang.RuntimeState (RuntimeState)
 import GhostLang.Types ( Label
                        , Value (..)
@@ -74,8 +74,9 @@ instance InstructionSet a => InstructionSet (Operation a) where
     exec (Concurrently ops) = do
       logString $ printf "Enter concurrent section"
       incConcCmds
+      scope <- ask
       state <- get
-      liftIO $ concurrently state ops
+      liftIO $ concurrently scope state ops
       logString $ printf "Exit concurrent section"
 
     -- Invoke a procedure call. Update counters accordingly.
@@ -110,7 +111,8 @@ instance InstructionSet a => InstructionSet (Operation a) where
 
 -- | Run a set of operations concurrently. Each operation is started
 -- in its own monad stack instance.
-concurrently :: InstructionSet a => RuntimeState -> [Operation a] -> IO ()
-concurrently state ops = do
-  as <- mapM (async . runInterpreter state . execOperation) ops
+concurrently :: InstructionSet a => Scope -> RuntimeState 
+             -> [Operation a] -> IO ()
+concurrently scope state ops = do
+  as <- mapM (async . runInterpreterScoped scope state . execOperation) ops
   mapM_ wait as

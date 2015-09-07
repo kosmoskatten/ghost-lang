@@ -20,15 +20,19 @@ procedure webPage_loadNewsPaperPage(numImages, imageSizeKB)
   // Fetch HTML page ...
   Http GET [] literal(200) KB,
 
-  // Read external js ...
-  Http GET [] literal(500) KB,
+  // A few things will probably be handled concurrently.
+  concurrently {
 
-  // Fetch external css ...
-  Http GET [] literal(30) KB,
+    // Read external js ...
+    Http GET [] literal(500) KB,
 
-  // Iterate to fetch the number of images.
-  loop numImages
-  {
-    Http GET [] imageSizeKB KB
+    // Fetch external css ...
+    Http GET [] literal(30) KB,
+
+    // Iterate to fetch the number of images.
+    loop numImages
+    {
+      Http GET [] imageSizeKB KB
+    }
   }
 }
