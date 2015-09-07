@@ -22,12 +22,19 @@ import GhostLang.Types ( Label
                        , Program (..)
                        , Pattern (..)
                        )
-import GhostLang.RuntimeState ( TVar
+import GhostLang.RuntimeState ( RuntimeState (..)
+                              , TVar
                               , Counter (..)
                               , GLog
                               , NetworkConfiguration (..)
                               , emptyCounter
                               , emptyNetworkConfiguration )
+import Network.HTTP.Client ( ManagerSettings (..)
+                           , defaultManagerSettings
+                           , newManager
+                           , rawConnectionModifySocket
+                           )
+import Network.Socket (Socket)
 
 -- | Convenience type aliases for external usage.
 type GhostProgram = Program IntrinsicSet
@@ -42,7 +49,7 @@ toPatternList (Program xs) = map extrTuple xs
     where extrTuple p@(Pattern _ l w _) = (l, w, p)
 
 -- | Run a selected pattern with a set of counters, a network
--- configuration and a runtime mode.
+-- configuration, payload data, tracing configuration and the logger.
 runPattern :: GhostPattern 
            -> [TVar Counter] 
            -> NetworkConfiguration
@@ -50,6 +57,23 @@ runPattern :: GhostPattern
            -> Bool
            -> GLog
            -> IO ()
-runPattern = runPattern'
+runPattern pattern counters' nwConf dataChunk' traceConf glog = do
+  mgr <- newManager managerSettings
+  let state = RuntimeState { counters             = counters'
+                           , networkConfiguration = nwConf
+                           , connectionMgr        = mgr
+                           , dataChunk            = dataChunk'
+                           , shallTrace           = traceConf
+                           , logger               = glog
+                           }
+  runPattern' pattern state
+
+managerSettings :: ManagerSettings
+managerSettings = 
+    defaultManagerSettings 
+        { managerRawConnection = rawConnectionModifySocket modifySocket }
+
+modifySocket :: Socket -> IO ()
+modifySocket _ = putStrLn "MODIFY"
 
 

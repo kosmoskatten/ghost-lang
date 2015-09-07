@@ -3,47 +3,13 @@ module GhostLang.Interpreter
     , runPattern'
     ) where
 
-import GhostLang.Conduit (DataChunk)
-import GhostLang.Interpreter.InterpreterM
-import GhostLang.Interpreter.Intrinsic
-import GhostLang.Interpreter.InstructionSet
-import GhostLang.RuntimeState ( RuntimeState (..)
-                              , TVar
-                              , Counter                                
-                              , GLog
-                              , NetworkConfiguration )
+import GhostLang.Interpreter.InterpreterM (runInterpreter)
+import GhostLang.Interpreter.Intrinsic (IntrinsicSet (..))
+import GhostLang.Interpreter.InstructionSet (InstructionSet, execPattern)
+import GhostLang.RuntimeState (RuntimeState)
 import GhostLang.Types (Pattern)
-import Network.HTTP.Client ( ManagerSettings (..)
-                           , defaultManagerSettings
-                           , newManager
-                           , rawConnectionModifySocket
-                           )
-import Network.Socket (Socket)
 
--- | Run a selected pattern with a set of counters, a network
--- configuration and a runtime mode.
-runPattern' :: InstructionSet a 
-            => Pattern a 
-            -> [TVar Counter] 
-            -> NetworkConfiguration
-            -> DataChunk
-            -> Bool
-            -> GLog
-            -> IO ()
-runPattern' p cs nw dc t glog = do
-  mgr <- newManager managerSettings
-  let state = RuntimeState { counters             = cs
-                           , networkConfiguration = nw
-                           , connectionMgr        = mgr
-                           , dataChunk            = dc
-                           , shallTrace           = t
-                           , logger               = glog }
-  runInterpreter state $ execPattern p
+-- | Run a selected pattern with a state.
+runPattern' :: InstructionSet a => Pattern a -> RuntimeState -> IO ()
+runPattern' pattern state = runInterpreter state $ execPattern pattern
 
-managerSettings :: ManagerSettings
-managerSettings = 
-    defaultManagerSettings 
-        { managerRawConnection = rawConnectionModifySocket modifySocket }
-
-modifySocket :: Socket -> IO ()
-modifySocket _ = putStrLn "MODIFY"
