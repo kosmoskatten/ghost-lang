@@ -18,16 +18,16 @@ procedure webPage_loadNewsPaperPage(numImages, imageSizeKB)
   // values to concurrent sections is fixed.
   
   // Fetch HTML page ...
-  Http GET [] literal(200) KB,
+  Http GET [] gaussian(70, 30) KB,
 
   // A few things will probably be handled concurrently.
   concurrently {
 
     // Read external js ...
-    Http GET [] literal(500) KB,
+    Http GET [] gaussian(350, 150) KB,
 
     // Fetch external css ...
-    Http GET [] literal(30) KB,
+    Http GET [] gaussian(30, 10) KB,
 
     // Iterate to fetch the number of images.
     loop numImages

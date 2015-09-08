@@ -29,6 +29,7 @@ import GhostLang.RuntimeState ( RuntimeState (..)
                               , NetworkConfiguration (..)
                               , emptyCounter
                               , emptyNetworkConfiguration )
+import GhostLang.Interpreter.Random (createSystemRandom)
 import Network.HTTP.Client ( ManagerSettings (..)
                            , defaultManagerSettings
                            , newManager
@@ -58,13 +59,15 @@ runPattern :: GhostPattern
            -> GLog
            -> IO ()
 runPattern pattern counters' nwConf dataChunk' traceConf glog = do
-  mgr <- newManager managerSettings
+  mgr     <- newManager managerSettings
+  random' <- createSystemRandom
   let state = RuntimeState { counters             = counters'
                            , networkConfiguration = nwConf
                            , connectionMgr        = mgr
                            , dataChunk            = dataChunk'
                            , shallTrace           = traceConf
                            , logger               = glog
+                           , random               = random'
                            }
   runPattern' pattern state
 

@@ -5,7 +5,7 @@ module GhostLang.Interpreter.InstructionSet
     ) where
 
 import Control.Concurrent.Async (async, wait)
-import Control.Monad (replicateM_)
+import Control.Monad (forM, replicateM_)
 import Data.Maybe (fromJust)
 import GhostLang.Interpreter.InterpreterM ( InterpreterM
                                           , runInterpreterScoped
@@ -23,8 +23,9 @@ import GhostLang.Interpreter.InterpreterM ( InterpreterM
                                           , local
                                           , liftIO
                                           )
+import GhostLang.Interpreter.Random (createSystemRandom)
 import GhostLang.Interpreter.Scope (Scope, fromList, lookup)
-import GhostLang.RuntimeState (RuntimeState)
+import GhostLang.RuntimeState (RuntimeState (..))
 import GhostLang.Types ( Label
                        , Value (..)
                        , Operation (..)
@@ -114,5 +115,11 @@ instance InstructionSet a => InstructionSet (Operation a) where
 concurrently :: InstructionSet a => Scope -> RuntimeState 
              -> [Operation a] -> IO ()
 concurrently scope state ops = do
-  as <- mapM (async . runInterpreterScoped scope state . execOperation) ops
+  as <- 
+      forM ops $ \op -> do
+        -- A new random generator must be created per thread. Beside
+        -- that the current state is propagated.
+        random' <- createSystemRandom
+        async $ runInterpreterScoped scope state { random = random' } $ 
+                    execOperation op
   mapM_ wait as

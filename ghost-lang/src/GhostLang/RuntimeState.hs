@@ -12,6 +12,7 @@ module GhostLang.RuntimeState
 import Control.Concurrent.STM (TVar)
 import GhostLang.Conduit (DataChunk, genDataChunk)
 import GhostLang.GLog (GLog, newEmptyGLog)
+import GhostLang.Interpreter.Random (GenIO, createSystemRandom)
 import GhostLang.RuntimeState.Counter
 import Network.HTTP.Client ( Manager
                            , defaultManagerSettings
@@ -41,6 +42,11 @@ data RuntimeState =
 
                  , logger               :: !GLog
                  -- ^ The logger.
+
+                 , random               :: !GenIO
+                 -- ^ The random generator. Note: the random generator
+                 -- is not thread safe, one instance must be created
+                 -- per thread in a concurrent section.
                  }
 
 -- | Network configuration parameters.
@@ -60,16 +66,19 @@ data NetworkConfiguration =
 -- codes!!!
 defaultRuntimeState :: IO RuntimeState
 defaultRuntimeState = do
-  mgr  <- newManager defaultManagerSettings
-  dc   <- genDataChunk 128 -- Just some small size.
-  glog <- newEmptyGLog
+  mgr     <- newManager defaultManagerSettings
+  dc      <- genDataChunk 128 -- Just some small size.
+  glog    <- newEmptyGLog
+  random' <- createSystemRandom
   return $ RuntimeState 
              { counters             = []
              , networkConfiguration = emptyNetworkConfiguration
              , connectionMgr        = mgr
              , dataChunk            = dc
              , shallTrace           = False
-             , logger               = glog }
+             , logger               = glog 
+             , random               = random'
+             }
 
 emptyNetworkConfiguration :: NetworkConfiguration
 emptyNetworkConfiguration = 

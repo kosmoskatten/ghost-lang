@@ -37,7 +37,6 @@ module GhostLang.Interpreter.InterpreterM
     , liftIO
     ) where
 
-import Control.Concurrent (myThreadId)
 import Control.Concurrent.STM ( STM
                               , atomically
                               , modifyTVar'
@@ -58,8 +57,13 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Text (Text)
 import Data.Time ( NominalDiffTime
                  , diffUTCTime
-                 , getCurrentTime )
+                 , getCurrentTime 
+                 )
 import GHC.Int (Int64)
+import GhostLang.Interpreter.Random ( atLeastZero
+                                    , gaussianValue
+                                    , uniformValue
+                                    )
 import GhostLang.Interpreter.Scope (Scope, emptyScope, lookup)
 import GhostLang.RuntimeState ( Counter (..)
                               , HttpStatus
@@ -79,7 +83,6 @@ import GhostLang.Types ( Value (..)
                        , Payload (..)
                        , Pace (..) )
 import Prelude hiding (lookup)
-import Text.Printf (printf)
 import qualified GhostLang.GLog as Logger
 
 -- | Interpreter monad type for interpretation of instructions
@@ -152,14 +155,19 @@ timedAction act = do
 
 -- | Evaluate a value.
 evalValue :: Value -> InterpreterM Int64
-evalValue (Literal x) = return x
-evalValue (Stored x) = do
+evalValue (Gaussian mean stddev) =
+  atLeastZero <$> (gaussianValue mean stddev =<< random <$> get)
+
+evalValue (Literal x)            = return x
+
+evalValue (Stored x)             = do
   v <- lookup x <$> ask
   case v of
     Just v' -> evalValue v'
     _       -> error $ "Cannot lookup stored value: " ++ show x
-  
-evalValue _ = error "Not yet implemented"
+
+evalValue (Uniform startR endR)  =
+  atLeastZero <$> (uniformValue (startR, endR) =<< random <$> get)
 
 -- | Evaluate a TimeUnit. The result is a value suitable for feeding
 -- threadDelay.
