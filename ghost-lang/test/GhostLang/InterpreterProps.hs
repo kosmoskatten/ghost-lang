@@ -10,16 +10,16 @@ import Control.Monad (forM)
 import Data.List (foldl')
 import Data.Text (Text)
 import GHC.Int (Int64)
-import GhostLang.Conduit (genDataChunk)
-import GhostLang.GLog (newEmptyGLog)
 import GhostLang.InterpreterGenerators ( SimpleSequencePattern (..)
                                        , ManySimpleSequencePatterns (..)
                                        , NonNestedLoopPattern (..)
                                        , NonNestedConcPattern (..)
                                        )
 import GhostLang.Interpreter (runPattern')
+import GhostLang.Interpreter.InstructionSet (InstructionSet)
 import GhostLang.RuntimeState ( Counter (..)
-                              , emptyNetworkConfiguration
+                              , RuntimeState (..)
+                              , defaultRuntimeState
                               , emptyCounter
                               , getPatternRuns
                               , getTotalPatternRuns
@@ -37,11 +37,7 @@ import Test.QuickCheck.Monadic
 simpleSequencePattern :: SimpleSequencePattern -> Property
 simpleSequencePattern (SimpleSequencePattern p) =
     monadicIO $ do
-      inpC    <- run (newTVarIO emptyCounter)
-      dc      <- run (genDataChunk 128)
-      run (runPattern' p [inpC] emptyNetworkConfiguration dc False
-             =<< newEmptyGLog)
-      counter <- run (readTVarIO inpC)
+      counter <- run (runWithInputCounter p)
 
       -- As many instructions invoked as the number of operations in
       -- the list.
@@ -69,13 +65,11 @@ manySimpleSequencePatterns :: ManySimpleSequencePatterns -> Property
 manySimpleSequencePatterns (ManySimpleSequencePatterns ps) =
     monadicIO $ do
       globalC <- run (newTVarIO emptyCounter)
-      dc      <- run (genDataChunk 128)
       locals  <- run (forM ps $ \p -> do
                         localC <- newTVarIO emptyCounter
-                        runPattern' p [globalC, localC] 
-                                    emptyNetworkConfiguration dc False
-                                      =<< newEmptyGLog
-                        return =<< readTVarIO localC
+                        state  <- defaultRuntimeState
+                        runPattern' p $ state { counters = [globalC, localC] }
+                        readTVarIO localC
                      )
       global <- run (readTVarIO globalC)
 
@@ -99,11 +93,7 @@ manySimpleSequencePatterns (ManySimpleSequencePatterns ps) =
 nonNestedLoopPattern :: NonNestedLoopPattern -> Property
 nonNestedLoopPattern (NonNestedLoopPattern p) =
     monadicIO $ do
-      inpC    <- run (newTVarIO emptyCounter)
-      dc      <- run (genDataChunk 128)
-      run (runPattern' p [inpC] emptyNetworkConfiguration dc False
-             =<< newEmptyGLog)
-      counter <- run (readTVarIO inpC)
+      counter <- run (runWithInputCounter p)
 
       -- Count the number of invoke operations and loop
       -- operations.
@@ -124,11 +114,7 @@ nonNestedLoopPattern (NonNestedLoopPattern p) =
 nonNestedConcPattern :: NonNestedConcPattern -> Property
 nonNestedConcPattern (NonNestedConcPattern p) =
     monadicIO $ do
-      inpC    <- run (newTVarIO emptyCounter)
-      dc      <- run (genDataChunk 128)
-      run (runPattern' p [inpC] emptyNetworkConfiguration dc False
-             =<< newEmptyGLog)
-      counter <- run (readTVarIO inpC)
+      counter <- run (runWithInputCounter p)
 
       -- Count the number of invoke operations and concurrently
       -- commands.
@@ -170,3 +156,10 @@ countInvokesAndNonNestedConcs (Pattern _ _ _ ops) = foldl' count (0, 0) ops
       count (x, y) (Invoke _)          = (x + 1, y)
       count (x, y) (Concurrently ops') = (x + fromIntegral (length ops'), y + 1)
       count x _                        = x
+
+runWithInputCounter :: InstructionSet a => Pattern a -> IO Counter
+runWithInputCounter pattern = do
+  inpC  <- newTVarIO emptyCounter
+  state <- defaultRuntimeState
+  runPattern' pattern $ state { counters = [inpC] }
+  readTVarIO inpC

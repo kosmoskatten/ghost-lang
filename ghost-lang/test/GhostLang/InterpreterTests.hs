@@ -8,14 +8,14 @@ module GhostLang.InterpreterTests
     ) where
 
 import Control.Concurrent.STM (newTVarIO, readTVarIO)
-import GhostLang.Conduit (genDataChunk)
-import GhostLang.GLog (newEmptyGLog)
 import GhostLang.RuntimeState ( Counter (..)
-                              , emptyNetworkConfiguration
+                              , RuntimeState (..)
+                              , defaultRuntimeState
                               , emptyCounter
                               , getProcCalls
                               , getTotalProcCalls
                               )
+import GhostLang.Interpreter.InstructionSet (InstructionSet)
 import GhostLang.InterpreterGenerators (TestInstrSet (..))
 import GhostLang.Interpreter (runPattern')
 import GhostLang.Types ( Value (..)
@@ -35,10 +35,8 @@ oneLevelCallNoParamsPattern = do
                       [ Invoke Instr1 ]
                   ]) []
           ]
-  inpC    <- newTVarIO emptyCounter
-  dc      <- genDataChunk 128
-  runPattern' p [inpC] emptyNetworkConfiguration dc False =<< newEmptyGLog
-  counter <- readTVarIO inpC
+
+  counter <- runWithInputCounter p
 
   1 @=? getProcCalls "pr1" counter
   1 @=? getTotalProcCalls counter
@@ -54,10 +52,8 @@ oneLevelCallOneParamPattern = do
                              [ Invoke Instr1 ]
                   ]) [ Literal 5 ]
           ]
-  inpC    <- newTVarIO emptyCounter
-  dc      <- genDataChunk 128
-  runPattern' p [inpC] emptyNetworkConfiguration dc False =<< newEmptyGLog
-  counter <- readTVarIO inpC
+
+  counter <- runWithInputCounter p
 
   1 @=? getProcCalls "pr1" counter
   1 @=? getTotalProcCalls counter
@@ -79,10 +75,8 @@ localScopeOneParamPattern = do
       p     = Pattern (initialPos "") "pa1" 1
               [ Call proc1 [ Literal 5 ]
               ]
-  inpC    <- newTVarIO emptyCounter
-  dc      <- genDataChunk 128
-  runPattern' p [inpC] emptyNetworkConfiguration dc False =<< newEmptyGLog
-  counter <- readTVarIO inpC
+
+  counter <- runWithInputCounter p
 
   1 @=? getProcCalls "pr1" counter
   1 @=? getProcCalls "pr2" counter
@@ -105,10 +99,8 @@ twoLevelTwoParamsPattern = do
       p     = Pattern (initialPos "") "pa1" 1
               [ Call proc1 [ Literal 5, Literal 10 ]
               ] :: Pattern TestInstrSet
-  inpC    <- newTVarIO emptyCounter
-  dc      <- genDataChunk 128
-  runPattern' p [inpC] emptyNetworkConfiguration dc False =<< newEmptyGLog
-  counter <- readTVarIO inpC
+
+  counter <- runWithInputCounter p
 
   1  @=? getProcCalls "pr1" counter
   5  @=? getProcCalls "pr2" counter
@@ -137,10 +129,8 @@ longChainTwoParamsPattern = do
       p     = Pattern (initialPos "") "pa1" 1
               [ Call proc1 [ Literal 5, Literal 10 ]
               ] :: Pattern TestInstrSet
-  inpC    <- newTVarIO emptyCounter
-  dc      <- genDataChunk 128
-  runPattern' p [inpC] emptyNetworkConfiguration dc False =<< newEmptyGLog
-  counter <- readTVarIO inpC
+  
+  counter <- runWithInputCounter p
 
   1  @=? getProcCalls "pr1" counter
   1  @=? getProcCalls "pr2" counter
@@ -149,3 +139,11 @@ longChainTwoParamsPattern = do
   5  @=? getProcCalls "pr5" counter
   10 @=? getProcCalls "pr6" counter
   2  @=? loopCmds counter
+
+runWithInputCounter :: InstructionSet a => Pattern a -> IO Counter
+runWithInputCounter pattern = do
+  inpC  <- newTVarIO emptyCounter
+  state <- defaultRuntimeState
+  runPattern' pattern $ state { counters = [inpC] }
+  readTVarIO inpC
+  
