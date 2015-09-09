@@ -51,6 +51,7 @@ import GhostLang.Node.State ( State (..)
                             , lookupPattern
                             , allPatterns
                             , modifyTVar'IO
+                            , mkRandomSelector
                             )
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.Text as T
@@ -84,13 +85,15 @@ loadProgram :: State -> ProgramPath -> IO (Either String Resource)
 loadProgram state ProgramPath {..} = do
   result <- compileAndLink (T.unpack programPath)
   case result of
-    Right program -> do
-      key <- genId
+    Right program -> do                
+      key            <- genId
+      randomPattern' <- mkRandomSelector $ toPatternList program
       let url  = "/program/" `T.append` key
-          repr = ProgramRepr { programPath_ = programPath
-                             , programUrl   = url
-                             , ghostProgram = program
-                             , patternList  = toPatternList program
+          repr = ProgramRepr { programPath_  = programPath
+                             , programUrl    = url
+                             , ghostProgram  = program
+                             , patternList   = toPatternList program
+                             , randomPattern = randomPattern'
                              }
           answer = Resource { resourceUrl = url }
       insertProgram state key repr

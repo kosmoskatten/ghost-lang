@@ -13,6 +13,7 @@ module GhostLang.Node.State
     , allPrograms
     , allPatterns
     , modifyTVar'IO
+    , mkRandomSelector
     ) where
 
 import Control.Concurrent.Async (Async)
@@ -23,6 +24,7 @@ import Control.Concurrent.STM ( TVar
                               , readTVarIO
                               )
 import Data.Text (Text)
+import Data.Vector (Vector, (!), fromList)
 import GhostLang ( GhostProgram
                  , GhostPattern
                  , PatternTuple
@@ -33,17 +35,20 @@ import GhostLang ( GhostProgram
                  )
 import GhostLang.Conduit (DataChunk, genDataChunk)
 import GhostLang.GLog (GLog, newStdoutGLog)
+import System.Random.MWC (GenIO, createSystemRandom, uniformR)
 
 import qualified Data.Map.Strict as Map
+import qualified Data.Vector as Vector
 
 type ResourceKey = Text
 
 -- | A representation of a compiled program.
 data ProgramRepr =
-    ProgramRepr { programPath_ :: !Text
-                , programUrl   :: !Text
-                , ghostProgram :: !GhostProgram
-                , patternList  :: ![PatternTuple]
+    ProgramRepr { programPath_  :: !Text
+                , programUrl    :: !Text
+                , ghostProgram  :: !GhostProgram
+                , patternList   :: ![PatternTuple]
+                , randomPattern :: IO GhostPattern
                 }
 
 -- | Map from (program id) string to the corresponding program
@@ -107,3 +112,21 @@ allPatterns State {..} = Map.elems <$> readTVarIO patternMap
 
 modifyTVar'IO :: TVar a -> (a -> a) -> IO ()
 modifyTVar'IO tvar g = atomically $ modifyTVar' tvar g
+
+-- | Expand a list of pattern tuples to a list of ghost patterns. Each
+-- pattern is expanded accordingly to its weight.
+expandPatterns :: [PatternTuple] -> [GhostPattern]
+expandPatterns = concatMap (\(_, w, p) -> replicate (fromIntegral w) p)
+
+-- | Make a random selector for a pattern from the patterns in the
+-- list. The probability for a selection is equal to the pattern's
+-- weight.
+mkRandomSelector :: [PatternTuple] -> IO (IO GhostPattern)
+mkRandomSelector xs = do
+  random <- createSystemRandom
+  let vector = fromList $ expandPatterns xs
+      range  = (0, Vector.length vector - 1)
+  return $ randomSelector random vector range
+
+randomSelector :: GenIO -> Vector GhostPattern -> (Int, Int) -> IO GhostPattern
+randomSelector random vector range = (vector !) <$> uniformR range random
