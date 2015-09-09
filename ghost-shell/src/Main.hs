@@ -12,6 +12,7 @@ import Shell ( Shell
              , nodeListSelectedProgram
              , nodeListPrograms
              , nodeRunNamedPattern
+             , nodeRunRandomPattern
              , storeProgramResource
              , liftIO
              )
@@ -78,6 +79,14 @@ eval (SetHttpConfig server port) = do
 -- | Run a named pattern from the saved program.
 eval (RunNamedPattern name trace src) = do
   result <- nodeRunNamedPattern name trace src
+  case result of
+    Right res -> liftIO $ printf "Got pattern resource: %s\n" (show res)
+    Left  err -> liftIO $ printf "Error: %s\n" err
+  repl
+
+-- | Run a named pattern from the saved program.
+eval (RunRandomPattern trace src) = do
+  result <- nodeRunRandomPattern trace src
   case result of
     Right res -> liftIO $ printf "Got pattern resource: %s\n" (show res)
     Left  err -> liftIO $ printf "Error: %s\n" err

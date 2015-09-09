@@ -9,6 +9,7 @@ module Shell
     , nodeListSelectedProgram
     , nodeListPrograms
     , nodeRunNamedPattern
+    , nodeRunRandomPattern
     , storeProgramResource
     , liftIO
     ) where
@@ -32,6 +33,7 @@ import GhostLang.API ( PatternInfo (..)
                      , listSelectedProgram
                      , listPrograms
                      , runNamedPattern
+                     , runRandomPattern
                      )
 import Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
 import qualified Data.Text as T
@@ -95,6 +97,19 @@ nodeRunNamedPattern name trace src = do
                                }
           (mgr, baseUrl) <- nodeParams
           liftIO $ runNamedPattern mgr baseUrl prog namedPattern
+
+nodeRunRandomPattern :: Bool -> Maybe String -> Shell (Either String Resource)
+nodeRunRandomPattern trace src = do
+  maybeProg <- progResource <$> get
+  maybe (return $ Left "No saved program") nodeRunRandomPattern' maybeProg
+    where
+      nodeRunRandomPattern' :: Resource -> Shell (Either String Resource)
+      nodeRunRandomPattern' prog = do
+          let params = ExecParams { shallTrace = trace
+                                  , srcIp      = src
+                                  }
+          (mgr, baseUrl) <- nodeParams
+          liftIO $ runRandomPattern mgr baseUrl prog params
 
 storeProgramResource :: Resource -> Shell ()
 storeProgramResource res = modify' $ \s -> s { progResource = Just res }

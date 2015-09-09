@@ -15,6 +15,7 @@ module GhostLang.API
     , listSelectedProgram
     , listPrograms
     , runNamedPattern
+    , runRandomPattern
     , module Data.Aeson
     ) where
 
@@ -171,6 +172,22 @@ runNamedPattern mgr baseUrl res pattern = do
                     `mappend` "/named-pattern"
   result <- tryString $ do
       req <- mkPostRequest url pattern
+      serverTalk req mgr
+  case result of
+    Right (stat, body)
+        | stat == status201 -> return $ Right (strongDecode body)
+        | otherwise         -> return $ Left (LBS.unpack body)
+    Left e                  -> return $ Left e
+
+-- | Run a random pattern from the program described by the
+-- resource. If successful a resource to the pattern is returned.
+runRandomPattern :: Manager -> Server -> Resource
+                 -> ExecParams -> IO (Either String Resource)
+runRandomPattern mgr baseUrl res params = do
+  let url = baseUrl `mappend` (T.unpack $ resourceUrl res)
+                    `mappend` "/random-pattern"
+  result <- tryString $ do
+      req <- mkPostRequest url params
       serverTalk req mgr
   case result of
     Right (stat, body)
