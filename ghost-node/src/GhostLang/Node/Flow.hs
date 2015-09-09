@@ -8,6 +8,7 @@ module GhostLang.Node.Flow
     , listPrograms
     , listPatternsFromProgram
     , runNamedPattern
+    , runRandomPattern
     , loadProgram
     , listPatterns
     , getGlobalCounter
@@ -104,7 +105,7 @@ loadProgram state ProgramPath {..} = do
 -- key.
 runNamedPattern :: State -> ResourceKey -> NamedPattern 
                 -> IO (Either ByteString Resource)
-runNamedPattern state key namedPattern@NamedPattern {..} = do
+runNamedPattern state key NamedPattern {..} = do
   -- A lot of looking things up ...
   maybeProgram <- lookupProgram state key
   case maybeProgram of
@@ -112,7 +113,7 @@ runNamedPattern state key namedPattern@NamedPattern {..} = do
       case fromPatternList execPattern $ patternList program of
 
         -- Yes, both program and pattern is found.
-        Just pattern -> Right <$> runNamedPattern' state namedPattern pattern
+        Just pattern -> Right <$> runSelectedPattern state execParams pattern
 
         -- Not able to find the requested pattern.
         Nothing      -> return $
@@ -120,22 +121,35 @@ runNamedPattern state key namedPattern@NamedPattern {..} = do
 
     -- Not able to find the requested program.
     Nothing      -> return $ 
-       Left ("Not found program key: " `BS.append` encodeUtf8 key)
+      Left ("Not found program key: " `BS.append` encodeUtf8 key)
 
--- | Help function to run a named pattern. Do the core stuff.
-runNamedPattern' :: State -> NamedPattern -> GhostPattern -> IO Resource
-runNamedPattern' state NamedPattern {..} pattern = do
+-- | Run a random pattern from the program identified by the resource
+-- key.
+runRandomPattern :: State -> ResourceKey -> ExecParams 
+                 -> IO (Either ByteString Resource)
+runRandomPattern state key params = do
+  maybeProgram <- lookupProgram state key
+  case maybeProgram of
+    Just program -> do
+      pattern <- randomPattern program
+      Right <$> runSelectedPattern state params pattern
+    Nothing      -> return $
+      Left ("Not found program key: " `BS.append` encodeUtf8 key)
+
+-- | Help function to run a selected pattern. Do the core stuff.
+runSelectedPattern :: State -> ExecParams -> GhostPattern -> IO Resource
+runSelectedPattern state ExecParams {..} pattern = do
   localCounter' <- newTVarIO emptyCounter
   networkConf'  <- readTVarIO $ networkConf state
   key           <- genId
                                                   
-  let networkConf'' = networkConf' { srcIpAddress = srcIp execParams }
+  let networkConf'' = networkConf' { srcIpAddress = srcIp }
       url           = "/pattern/" `T.append` key
 
   async_' <- async $ runPattern pattern [localCounter', globalCounter state]
                                 networkConf'' 
                                 (dataChunk state)
-                                (shallTrace execParams)
+                                shallTrace
                                 (logger state)
 
   insertPattern state key $ PatternRepr { patternUrl   = url

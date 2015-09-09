@@ -22,6 +22,7 @@ import GhostLang.Node.Flow ( getHttpConfig
                            , listPatternsFromProgram
                            , loadProgram
                            , runNamedPattern
+                           , runRandomPattern
                            , listPatterns
                            , getGlobalCounter
                            , getPatternCounter
@@ -89,6 +90,12 @@ route state req =
      -- selected ghost-program. Only POST requests are accepted.
      ["program", key, "named-pattern"]
        | requestMethod req == "POST" -> handleNamedPatternRun state req key
+       | otherwise                   -> handleNotAllowed ["POST"]
+
+     -- Route a request for running a random pattern from the selected
+     -- ghost-program. Only POST requests are accepted.
+     ["program", key, "random-pattern"]
+       | requestMethod req == "POST" -> handleRandomPatternRun state req key
        | otherwise                   -> handleNotAllowed ["POST"]
                                                      
      -- Route a request for listing all the resources for the patterns
@@ -161,6 +168,16 @@ handleNamedPatternRun state request key = do
   case result of
     Right answer -> return $ jsonResponse status201 answer
     Left err     -> return $ notFound err
+
+-- | Run a random pattern from the selected program. If the program is
+-- found a response code 201 is returned. If the program is not found
+-- 404 is returned.
+handleRandomPatternRun :: State -> Request -> ResourceKey -> IO Response
+handleRandomPatternRun state request key = do
+  result <- runRandomPattern state key =<< decodeBody request
+  case result of
+    Right answer -> return $ jsonResponse status201 answer
+    Left  err    -> return $ notFound err
 
 -- | List the resources for all patterns in flight. Always 200 as
 -- response.
