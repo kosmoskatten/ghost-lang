@@ -45,3 +45,21 @@ pattern shortVideoClipViewer with weight 1
   // MB and the pace is in mpbs.
   webMedia_streamVideoPaced(gaussian(25, 3), literal(10))
 }
+
+/*
+ * A pattern that is describing a behavior for uploading pictures to a
+ * web service (e.g. Instragram).
+ */
+pattern pictureUpload with weight 1
+{
+  // Load the frontpage, which is containing html, external js,
+  // external css and a parameterized number of images.
+  webPage_loadNewsPaperPage(gaussian(10, 2), gaussian(80, 22)),
+
+  // Upload quite big pictures (mean of 3000KB/3MB). The idea is that the
+  // service will compress them before publishing.
+  loop gaussian (3, 1)
+  {
+    webMedia_uploadPicture(gaussian(3000, 1200))
+  }
+}

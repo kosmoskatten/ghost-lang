@@ -14,3 +14,14 @@ procedure webMedia_streamVideoPaced(streamSizeMB, paceMbps)
 {
   Http GET [] streamSizeMB MB paceMbps mbps
 }
+
+/*
+ * Upload an image.
+ *
+ * INPUT:
+ * imageSizeKB - specify the size of the stream in KB.
+ */
+procedure webMedia_uploadPicture(imageSizeKB)
+{
+  Http PUT [] imageSizeKB KB
+}
