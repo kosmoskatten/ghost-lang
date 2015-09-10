@@ -16,6 +16,8 @@ executable ghost-shell
   other-modules:       Command
                        Shell
   build-depends:       base >= 4 && <5
+                     , aeson-pretty
+                     , bytestring
                      , ghost-api
                      , ghost-lang
                      , http-client

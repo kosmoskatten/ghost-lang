@@ -3,7 +3,9 @@ module Main
     ( main
     ) where
 
+import Data.Aeson.Encode.Pretty (encodePretty)
 import Command (Command (..), parseCommand)
+import GhostLang.API (ToJSON)
 import Shell ( Shell
              , runShell
              , nodeGetHttpConfig
@@ -19,6 +21,7 @@ import Shell ( Shell
 import System.Environment (getArgs)
 import System.IO (hFlush, stdout)
 import Text.Printf (printf)
+import qualified Data.ByteString.Lazy.Char8 as BS
 
 main :: IO ()
 main = do
@@ -39,7 +42,7 @@ eval (LoadProgram path) = do
   result <- nodeLoadProgram path
   case result of
     Right res -> do
-        liftIO $ printf "Saving resource: %s\n" (show res)
+        liftIO $ printf "Saving resource: %s\n" (encodePretty'String res)
         storeProgramResource res
     Left  err -> liftIO $ printf "Error: %s\n" err
   repl
@@ -48,7 +51,7 @@ eval (LoadProgram path) = do
 eval ListSelectedProgram = do
   result <- nodeListSelectedProgram
   case result of
-    Right res -> liftIO $ printf "Patterns: %s\n" (show res)
+    Right res -> liftIO $ printf "Patterns: %s\n" (encodePretty'String res)
     Left err  -> liftIO $ printf "Error: %s\n" err
   repl
 
@@ -56,7 +59,7 @@ eval ListSelectedProgram = do
 eval ListPrograms = do
   result <- nodeListPrograms
   case result of
-    Right res -> liftIO $ printf "Programs: %s\n" (show res)
+    Right res -> liftIO $ printf "Programs: %s\n" (encodePretty'String res)
     Left err  -> liftIO $ printf "Error: %s\n" err
   repl
 
@@ -64,7 +67,7 @@ eval ListPrograms = do
 eval GetHttpConfig = do
   result <- nodeGetHttpConfig
   case result of
-    Right res -> liftIO $ printf "Http config: %s\n" (show res)
+    Right res -> liftIO $ printf "Http config: %s\n" (encodePretty'String res)
     Left  err -> liftIO $ printf "Error: %s\n" err
   repl
 
@@ -80,7 +83,8 @@ eval (SetHttpConfig server port) = do
 eval (RunNamedPattern name trace src) = do
   result <- nodeRunNamedPattern name trace src
   case result of
-    Right res -> liftIO $ printf "Got pattern resource: %s\n" (show res)
+    Right res -> liftIO $ printf "Got pattern resource: %s\n" 
+                                 (encodePretty'String res)
     Left  err -> liftIO $ printf "Error: %s\n" err
   repl
 
@@ -88,7 +92,8 @@ eval (RunNamedPattern name trace src) = do
 eval (RunRandomPattern trace src) = do
   result <- nodeRunRandomPattern trace src
   case result of
-    Right res -> liftIO $ printf "Got pattern resource: %s\n" (show res)
+    Right res -> liftIO $ printf "Got pattern resource: %s\n" 
+                                 (encodePretty'String res)
     Left  err -> liftIO $ printf "Error: %s\n" err
   repl
 
@@ -109,3 +114,6 @@ eval EmptyLine = repl
 eval (Unknown str) = do
   liftIO $ putStrLn str
   repl
+
+encodePretty'String :: ToJSON a => a -> String
+encodePretty'String = BS.unpack . encodePretty
