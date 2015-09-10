@@ -11,6 +11,7 @@ module Shell
     , nodeListPatterns
     , nodeRunNamedPattern
     , nodeRunRandomPattern
+    , nodeListGlobalCounter
     , storeProgramResource
     ) where
 
@@ -22,6 +23,7 @@ import GhostLang.API ( PatternInfo (..)
                      , Service (..)
                      , NamedPattern (..)
                      , ExecParams (..)
+                     , PatternCounter (..)
                      , getHttpConfig
                      , setHttpConfig
                      , loadProgram
@@ -30,6 +32,7 @@ import GhostLang.API ( PatternInfo (..)
                      , listPatterns
                      , runNamedPattern
                      , runRandomPattern
+                     , listGlobalCounter
                      )
 import Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
 import qualified Data.Text as T
@@ -112,6 +115,12 @@ nodeRunRandomPattern state trace src = do
                                   }
           (mgr, baseUrl) <- nodeParams <$> liftIO (readIORef state)
           liftIO $ runRandomPattern mgr baseUrl prog params
+
+nodeListGlobalCounter :: MonadIO m => IORef State 
+                      -> m (Either String PatternCounter)
+nodeListGlobalCounter state = do
+  (mgr, baseUrl) <- nodeParams <$> liftIO (readIORef state)
+  liftIO $ listGlobalCounter mgr baseUrl
 
 storeProgramResource :: MonadIO m => IORef State -> Resource -> m ()
 storeProgramResource state res = 

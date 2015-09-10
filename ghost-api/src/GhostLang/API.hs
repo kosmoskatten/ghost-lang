@@ -17,6 +17,7 @@ module GhostLang.API
     , listPatterns
     , runNamedPattern
     , runRandomPattern
+    , listGlobalCounter
     , module Data.Aeson
     ) where
 
@@ -152,7 +153,7 @@ listPatterns mgr baseUrl =
 -- resource. If successful a resource to the pattern is returned.
 runNamedPattern :: Manager -> Server -> Resource 
                 -> NamedPattern -> IO (Either String Resource)
-runNamedPattern mgr baseUrl res pattern = do
+runNamedPattern mgr baseUrl res pattern =
   jsonBody status201 =<< (tryString $ do
       let url = baseUrl `mappend` (T.unpack $ resourceUrl res) 
                         `mappend` "/named-pattern"
@@ -169,6 +170,13 @@ runRandomPattern mgr baseUrl res params = do
                         `mappend` "/random-pattern"
       req <- mkPostRequest url params
       serverTalk req mgr)
+
+-- | List the global pattern counter.
+listGlobalCounter :: Manager -> Server -> IO (Either String PatternCounter)
+listGlobalCounter mgr baseUrl =
+  jsonBody status200 =<< (tryString $ do
+    req <- mkGetRequest (baseUrl `mappend` "/pattern/counter")
+    serverTalk req mgr)
 
 -- | Make a POST request carrying a JSON object and expecting a JSON
 -- object as response. Can throw exception if the url is malformed.

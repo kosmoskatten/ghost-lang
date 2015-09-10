@@ -17,6 +17,7 @@ import Shell ( State
              , nodeListPatterns
              , nodeRunNamedPattern
              , nodeRunRandomPattern
+             , nodeListGlobalCounter
              , storeProgramResource
              )
 import System.Console.Haskeline ( InputT
@@ -88,6 +89,11 @@ eval state (RunNamedPattern name trace src) = do
 -- | Run a named pattern from the saved program.
 eval state (RunRandomPattern trace src) = do
   presentJsonBody =<< nodeRunRandomPattern state trace src
+  repl state
+
+-- | List the global counter.
+eval state ListGlobalCounter = do
+  presentJsonBody =<< nodeListGlobalCounter state
   repl state
 
 -- | Print help information.

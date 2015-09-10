@@ -18,6 +18,7 @@ data Command where
     SetHttpConfig       :: !String -> !Int -> Command
     RunNamedPattern     :: !String -> !Bool -> !(Maybe String) -> Command
     RunRandomPattern    :: !Bool -> !(Maybe String) -> Command
+    ListGlobalCounter   :: Command
     Help                :: Command
     Quit                :: Command
     EmptyLine           :: Command
@@ -40,6 +41,7 @@ aCommand = spaces *> ( try loadProgram
                    <|> try setHttpConfig
                    <|> try runNamedPattern
                    <|> try runRandomPattern
+                   <|> try listGlobalCounter
                    <|> try help 
                    <|> try quit 
                    <|> emptyLine )
@@ -80,6 +82,10 @@ runRandomPattern = do
   keyword "run-random-pattern"
   RunRandomPattern <$> (spaces *> trace)
                    <*> ((spaces *> maybeSrcIp) <* (spaces >> eof))
+
+listGlobalCounter :: Parser Command
+listGlobalCounter = keyword "list-global-counter" >> spaces >> eof 
+                            >> pure ListGlobalCounter
 
 help :: Parser Command
 help = string "help" >> spaces >> eof >> pure Help
