@@ -87,19 +87,15 @@ data PatternCounter = PatternCounter { totalTimeS   :: !Double
                                      }
     deriving (Eq, Generic, Show)
 
-type Server = String
+type Server      = String
+type ServerReply = (Status, LBS.ByteString)
 
 -- | Get the http configuration.
 getHttpConfig :: Manager -> Server -> IO (Either String Service)
-getHttpConfig mgr baseUrl = do
-  result <- tryString $ do
+getHttpConfig mgr baseUrl =
+  jsonBody status200 =<< (tryString $ do
       req <- mkGetRequest (baseUrl `mappend` httpConfigUrl)
-      serverTalk req mgr
-  case result of
-    Right (stat, body)
-        | stat == status200 -> return $ Right (strongDecode body)
-        | otherwise         -> return $ Left (LBS.unpack body)
-    Left e                  -> return $ Left e
+      serverTalk req mgr)
 
 -- | Set the http configuration.
 setHttpConfig :: Manager -> Server -> Service -> IO (Either String ())
@@ -118,15 +114,10 @@ httpConfigUrl = "/configuration/http"
 
 -- | Load a program on the remote node.
 loadProgram :: Manager -> Server -> ProgramPath -> IO (Either String Resource)
-loadProgram mgr baseUrl prog = do
-  result <- tryString $ do
+loadProgram mgr baseUrl prog =
+  jsonBody status201 =<< (tryString $ do
       req <- mkPostRequest (baseUrl `mappend` loadProgramUrl) prog
-      serverTalk req mgr
-  case result of
-    Right (stat, body)
-        | stat == status201 -> return $ Right (strongDecode body)
-        | otherwise         -> return $ Left (LBS.unpack body)
-    Left e                  -> return $ Left e
+      serverTalk req mgr)
 
 -- | Url to the resource on which a program load can be issued.
 loadProgramUrl :: String
@@ -135,29 +126,19 @@ loadProgramUrl = "/program/load"
 -- | List the patterns for the selected program on the remote node.
 listSelectedProgram :: Manager -> Server -> Resource 
                     -> IO (Either String [PatternInfo])
-listSelectedProgram mgr baseUrl res = do
-  let url = baseUrl `mappend` (T.unpack $ resourceUrl res) `mappend` "/list"
-  result <- tryString $ do
+listSelectedProgram mgr baseUrl res =
+  jsonBody status200 =<< (tryString $ do
+      let url = baseUrl `mappend` (T.unpack $ resourceUrl res) `mappend` "/list"
       req <- mkGetRequest url
-      serverTalk req mgr
-  case result of
-    Right (stat, body)
-        | stat == status200 -> return $ Right (strongDecode body)
-        | otherwise         -> return $ Left (LBS.unpack body)
-    Left e                  -> return $ Left e
+      serverTalk req mgr)
 
 -- | List the resource urls for all loaded programs on the node.
 listPrograms :: Manager -> Server -> IO (Either String [Resource])
-listPrograms mgr baseUrl = do
-  let url = baseUrl `mappend` listProgramsUrl
-  result <- tryString $ do
+listPrograms mgr baseUrl =
+  jsonBody status200 =<< (tryString $ do
+      let url = baseUrl `mappend` listProgramsUrl
       req <- mkGetRequest url
-      serverTalk req mgr
-  case result of
-    Right (stat, body)
-        | stat == status200 -> return $ Right (strongDecode body)
-        | otherwise         -> return $ Left (LBS.unpack body)
-    Left e                  -> return $ Left e
+      serverTalk req mgr)
   
 -- | Url to the resource of which a program list can be issued.
 listProgramsUrl :: String
@@ -168,32 +149,22 @@ listProgramsUrl = "/program/list"
 runNamedPattern :: Manager -> Server -> Resource 
                 -> NamedPattern -> IO (Either String Resource)
 runNamedPattern mgr baseUrl res pattern = do
-  let url = baseUrl `mappend` (T.unpack $ resourceUrl res) 
-                    `mappend` "/named-pattern"
-  result <- tryString $ do
+  jsonBody status201 =<< (tryString $ do
+      let url = baseUrl `mappend` (T.unpack $ resourceUrl res) 
+                        `mappend` "/named-pattern"
       req <- mkPostRequest url pattern
-      serverTalk req mgr
-  case result of
-    Right (stat, body)
-        | stat == status201 -> return $ Right (strongDecode body)
-        | otherwise         -> return $ Left (LBS.unpack body)
-    Left e                  -> return $ Left e
+      serverTalk req mgr)
 
 -- | Run a random pattern from the program described by the
 -- resource. If successful a resource to the pattern is returned.
 runRandomPattern :: Manager -> Server -> Resource
                  -> ExecParams -> IO (Either String Resource)
 runRandomPattern mgr baseUrl res params = do
-  let url = baseUrl `mappend` (T.unpack $ resourceUrl res)
-                    `mappend` "/random-pattern"
-  result <- tryString $ do
+  jsonBody status201 =<< (tryString $ do
+      let url = baseUrl `mappend` (T.unpack $ resourceUrl res)
+                        `mappend` "/random-pattern"
       req <- mkPostRequest url params
-      serverTalk req mgr
-  case result of
-    Right (stat, body)
-        | stat == status201 -> return $ Right (strongDecode body)
-        | otherwise         -> return $ Left (LBS.unpack body)
-    Left e                  -> return $ Left e
+      serverTalk req mgr)
 
 -- | Make a POST request carrying a JSON object and expecting a JSON
 -- object as response. Can throw exception if the url is malformed.
@@ -234,10 +205,19 @@ mkPutRequest url msg = do
 
 -- | Send a request and expect and wait for the reply. Can throw
 -- exceptions.
-serverTalk :: Request -> Manager -> IO (Status, LBS.ByteString)
+serverTalk :: Request -> Manager -> IO ServerReply
 serverTalk req mgr = do
   resp <- httpLbs req mgr
   return (responseStatus resp, responseBody resp)
+
+jsonBody :: FromJSON a => Status -> Either String ServerReply 
+         -> IO (Either String a)
+jsonBody accept reply =
+    case reply of
+      Right (stat, body)
+          | stat == accept -> return $ Right (strongDecode body)
+          | otherwise      -> return $ Left (LBS.unpack body)
+      Left err             -> return $ Left err
 
 strongDecode :: FromJSON a => LBS.ByteString -> a
 strongDecode = fromJust . decode
