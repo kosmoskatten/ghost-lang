@@ -3,11 +3,12 @@ module Main
     ( main
     ) where
 
-import Data.Aeson.Encode.Pretty (encodePretty)
 import Command (Command (..), parseCommand)
+import Data.Aeson.Encode.Pretty (encodePretty)
+import Data.IORef (IORef, newIORef)
 import GhostLang.API (ToJSON)
-import Shell ( Shell
-             , runShell
+import Shell ( State
+             , mkState
              , nodeGetHttpConfig
              , nodeSetHttpConfig
              , nodeLoadProgram
@@ -17,95 +18,101 @@ import Shell ( Shell
              , nodeRunNamedPattern
              , nodeRunRandomPattern
              , storeProgramResource
-             , liftIO
              )
+import System.Console.Haskeline ( InputT
+                                , defaultSettings
+                                , runInputT
+                                , getInputLine
+                                , outputStrLn
+                                )
 import System.Environment (getArgs)
-import System.IO (hFlush, stdout)
 import Text.Printf (printf)
 import qualified Data.ByteString.Lazy.Char8 as BS
 
 main :: IO ()
 main = do
   [nodeAddress] <- getArgs
-  runShell repl nodeAddress
-
--- | Entry point for the read-eval-print-loop.
-repl :: Shell ()
-repl = do
-  liftIO $ putStr "> " >> hFlush stdout
-  eval =<< parseCommand <$> liftIO getLine
+  state         <- newIORef =<< mkState nodeAddress
+  runInputT defaultSettings $ repl state
+  
+repl :: IORef State -> InputT IO ()
+repl state = do
+  input <- getInputLine "> "
+  case input of
+    Just line -> eval state $ parseCommand line
+    Nothing   -> return ()
 
 -- | Evaluate a command.
-eval :: Command -> Shell ()
+eval :: IORef State -> Command -> InputT IO ()
 
 -- | Load a program.
-eval (LoadProgram path) = do
-  result <- nodeLoadProgram path
+eval state (LoadProgram path) = do
+  result <- nodeLoadProgram state path
   presentJsonBody result
-  either (const $ return ()) storeProgramResource result
-  repl
+  either (const $ return ()) (storeProgramResource state) result
+  repl state
 
 -- | List the patterns from the saved program.
-eval ListSelectedProgram = do
-  presentJsonBody =<< nodeListSelectedProgram
-  repl
+eval state ListSelectedProgram = do
+  presentJsonBody =<< nodeListSelectedProgram state
+  repl state
 
 -- | List the programs available on the node.
-eval ListPrograms = do
-  presentJsonBody =<< nodeListPrograms
-  repl
+eval state ListPrograms = do
+  presentJsonBody =<< nodeListPrograms state
+  repl state
 
 -- | List the patterns in-flight in the node.
-eval ListPatterns = do
-  presentJsonBody =<< nodeListPatterns
-  repl
+eval state ListPatterns = do
+  presentJsonBody =<< nodeListPatterns state
+  repl state
 
 -- | Get the http configuration of the node.
-eval GetHttpConfig = do
-  presentJsonBody =<< nodeGetHttpConfig
-  repl
+eval state GetHttpConfig = do
+  presentJsonBody =<< nodeGetHttpConfig state
+  repl state
 
 -- | Set the http configuration of the node.
-eval (SetHttpConfig server port) = do
-  result <- nodeSetHttpConfig server port
+eval state (SetHttpConfig server port) = do
+  result <- nodeSetHttpConfig state server port
   case result of
-    Right () -> liftIO $ putStrLn "OK"
-    Left err -> liftIO $ printf "Error: %s\n" err
-  repl
+    Right () -> outputStrLn "OK"
+    Left err -> outputStrLn $ printf "Error: %s" err
+  repl state
 
 -- | Run a named pattern from the saved program.
-eval (RunNamedPattern name trace src) = do
-  presentJsonBody =<< nodeRunNamedPattern name trace src
-  repl
+eval state (RunNamedPattern name trace src) = do
+  presentJsonBody =<< nodeRunNamedPattern state name trace src
+  repl state
 
 -- | Run a named pattern from the saved program.
-eval (RunRandomPattern trace src) = do
-  presentJsonBody =<< nodeRunRandomPattern trace src
-  repl
+eval state (RunRandomPattern trace src) = do
+  presentJsonBody =<< nodeRunRandomPattern state trace src
+  repl state
 
 -- | Print help information.
-eval Help = do
-  liftIO $ putStrLn "Help ..."
-  repl
+eval state Help = do
+  outputStrLn "Help ..."
+  repl state
 
 -- | Quit the repl loop.
-eval Quit = do
-  liftIO $ putStrLn "Bye!"
+eval _state Quit = do
+  outputStrLn "Bye"
   return ()
 
 -- | Just an empty line.
-eval EmptyLine = repl
+eval state EmptyLine = repl state
 
 -- | Unknown stuff ...
-eval (Unknown str) = do
-  liftIO $ putStrLn str
-  repl
+eval state (Unknown str) = do
+  outputStrLn str
+  repl state
 
-presentJsonBody :: ToJSON a => Either String a -> Shell ()
+presentJsonBody :: ToJSON a => Either String a -> InputT IO ()
 presentJsonBody result = 
   case result of
-    Right reply -> liftIO $ printf "%s\n" (encodePretty'String reply)
-    Left err    -> liftIO $ printf "Error: %s\n" err
+    Right reply -> outputStrLn $ printf "%s" (encodePretty'String reply)
+    Left err    -> outputStrLn $ printf "Error: %s" err
 
 encodePretty'String :: ToJSON a => a -> String
 encodePretty'String = BS.unpack . encodePretty

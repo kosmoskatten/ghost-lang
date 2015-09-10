@@ -1,8 +1,8 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 module Shell
-    ( Shell
-    , runShell
+    ( State
+    , mkState
     , nodeGetHttpConfig
     , nodeSetHttpConfig
     , nodeLoadProgram
@@ -12,16 +12,10 @@ module Shell
     , nodeRunNamedPattern
     , nodeRunRandomPattern
     , storeProgramResource
-    , liftIO
     ) where
 
-import Control.Monad.State ( StateT
-                           , MonadState
-                           , evalStateT
-                           , get
-                           , modify'
-                           )
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Data.IORef (IORef, modifyIORef', readIORef)
 import GhostLang.API ( PatternInfo (..)
                      , ProgramPath (..)
                      , Resource (..)
@@ -40,89 +34,88 @@ import GhostLang.API ( PatternInfo (..)
 import Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
 import qualified Data.Text as T
 
-data Context = Context { nodeAddress  :: !String
-                       , progResource :: !(Maybe Resource)
-                       , manager      :: !Manager
-                       }
+data State = State { nodeAddress  :: !String
+                   , progResource :: !(Maybe Resource)
+                   , manager      :: !Manager
+                   }
 
-newtype Shell a = Shell { extractShell :: StateT Context IO a }
-    deriving (Functor, Applicative, Monad, MonadState Context, MonadIO)
+mkState :: MonadIO m => String -> m State
+mkState nodeAddress' = State nodeAddress' Nothing <$> 
+                             liftIO (newManager defaultManagerSettings)
 
-runShell :: Shell a -> String -> IO a
-runShell act address = do
-  context <- Context address Nothing <$> newManager defaultManagerSettings
-  evalStateT (extractShell act) context
-
-nodeGetHttpConfig :: Shell (Either String Service)
-nodeGetHttpConfig = do
-  (mgr, baseUrl) <- nodeParams
+nodeGetHttpConfig :: MonadIO m => IORef State -> m (Either String Service)
+nodeGetHttpConfig state = do
+  (mgr, baseUrl) <- nodeParams <$> liftIO (readIORef state)
   liftIO $ getHttpConfig mgr baseUrl
 
-nodeSetHttpConfig :: String -> Int -> Shell (Either String ())
-nodeSetHttpConfig server port = do
-  (mgr, baseUrl) <- nodeParams
+nodeSetHttpConfig :: MonadIO m => IORef State -> String -> Int 
+                  -> m (Either String ())
+nodeSetHttpConfig state server port = do
+  (mgr, baseUrl) <- nodeParams <$> liftIO (readIORef state)
   liftIO $ setHttpConfig mgr baseUrl $ Service { serviceAddress = server
                                                , servicePort    = port }
 
-nodeLoadProgram :: FilePath -> Shell (Either String Resource)
-nodeLoadProgram filePath = do
-  (mgr, baseUrl) <- nodeParams
+nodeLoadProgram :: MonadIO m => IORef State -> FilePath 
+                -> m (Either String Resource)
+nodeLoadProgram state filePath = do
+  (mgr, baseUrl) <- nodeParams <$> liftIO (readIORef state)
   liftIO $ loadProgram mgr baseUrl ProgramPath { programPath = T.pack filePath }
 
-nodeListSelectedProgram :: Shell (Either String [PatternInfo])
-nodeListSelectedProgram = do
-  maybeProg <- progResource <$> get
+nodeListSelectedProgram :: MonadIO m => IORef State ->
+                           m (Either String [PatternInfo])
+nodeListSelectedProgram state = do
+  maybeProg <- progResource <$> liftIO (readIORef state)
   maybe (return $ Left "No saved program") nodeListProgram' maybeProg
     where 
-      nodeListProgram' :: Resource -> Shell (Either String [PatternInfo])
+      nodeListProgram' :: MonadIO m => Resource 
+                       -> m (Either String [PatternInfo])
       nodeListProgram' prog = do
-          (mgr, baseUrl) <- nodeParams          
+          (mgr, baseUrl) <- nodeParams <$> liftIO (readIORef state)
           liftIO $ listSelectedProgram mgr baseUrl prog
 
-nodeListPrograms :: Shell (Either String [Resource])
-nodeListPrograms = do
-  (mgr, baseUrl) <- nodeParams
+nodeListPrograms :: MonadIO m => IORef State -> m (Either String [Resource])
+nodeListPrograms state = do
+  (mgr, baseUrl) <- nodeParams <$> liftIO (readIORef state)
   liftIO $ listPrograms mgr baseUrl
 
-nodeListPatterns :: Shell (Either String [Resource])
-nodeListPatterns = do
-  (mgr, baseUrl) <- nodeParams
+nodeListPatterns :: MonadIO m => IORef State -> m (Either String [Resource])
+nodeListPatterns state = do
+  (mgr, baseUrl) <- nodeParams <$> liftIO (readIORef state)
   liftIO $ listPatterns mgr baseUrl
 
-nodeRunNamedPattern :: String -> Bool -> Maybe String 
-                    -> Shell (Either String Resource)
-nodeRunNamedPattern name trace src = do
-  maybeProg <- progResource <$> get
+nodeRunNamedPattern :: MonadIO m => IORef State -> String -> Bool 
+                    -> Maybe String -> m (Either String Resource)
+nodeRunNamedPattern state name trace src = do
+  maybeProg <- progResource <$> liftIO (readIORef state)
   maybe (return $ Left "No saved program") nodeRunNamedPattern' maybeProg
     where
-      nodeRunNamedPattern' :: Resource -> Shell (Either String Resource)
+      nodeRunNamedPattern' :: MonadIO m => Resource -> m (Either String Resource)
       nodeRunNamedPattern' prog = do
           let namedPattern = 
                   NamedPattern { execPattern = T.pack name
                                , execParams  = ExecParams { shallTrace = trace
                                                           , srcIp      = src }
                                }
-          (mgr, baseUrl) <- nodeParams
+          (mgr, baseUrl) <- nodeParams <$> liftIO (readIORef state)
           liftIO $ runNamedPattern mgr baseUrl prog namedPattern
 
-nodeRunRandomPattern :: Bool -> Maybe String -> Shell (Either String Resource)
-nodeRunRandomPattern trace src = do
-  maybeProg <- progResource <$> get
+nodeRunRandomPattern :: MonadIO m => IORef State -> Bool -> Maybe String 
+                     -> m (Either String Resource)
+nodeRunRandomPattern state trace src = do
+  maybeProg <- progResource <$> liftIO (readIORef state)
   maybe (return $ Left "No saved program") nodeRunRandomPattern' maybeProg
     where
-      nodeRunRandomPattern' :: Resource -> Shell (Either String Resource)
+      nodeRunRandomPattern' :: MonadIO m => Resource -> m (Either String Resource)
       nodeRunRandomPattern' prog = do
           let params = ExecParams { shallTrace = trace
                                   , srcIp      = src
                                   }
-          (mgr, baseUrl) <- nodeParams
+          (mgr, baseUrl) <- nodeParams <$> liftIO (readIORef state)
           liftIO $ runRandomPattern mgr baseUrl prog params
 
-storeProgramResource :: Resource -> Shell ()
-storeProgramResource res = modify' $ \s -> s { progResource = Just res }
+storeProgramResource :: MonadIO m => IORef State -> Resource -> m ()
+storeProgramResource state res = 
+    liftIO $ modifyIORef' state $ \s -> s { progResource = Just res }
 
-nodeParams :: Shell (Manager, String)
-nodeParams = (,) <$> manager' <*> nodeAddress'
-    where
-      manager'     = manager     <$> get
-      nodeAddress' = nodeAddress <$> get
+nodeParams :: State -> (Manager, String)
+nodeParams State {..} = (manager, nodeAddress)

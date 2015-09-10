@@ -20,8 +20,8 @@ executable ghost-shell
                      , bytestring
                      , ghost-api
                      , ghost-lang
+                     , haskeline
                      , http-client
-                     , mtl
                      , parsec
                      , text
                      , transformers
