@@ -14,6 +14,7 @@ module GhostLang.API
     , loadProgram
     , listSelectedProgram
     , listPrograms
+    , listPatterns
     , runNamedPattern
     , runRandomPattern
     , module Data.Aeson
@@ -136,13 +137,16 @@ listSelectedProgram mgr baseUrl res =
 listPrograms :: Manager -> Server -> IO (Either String [Resource])
 listPrograms mgr baseUrl =
   jsonBody status200 =<< (tryString $ do
-      let url = baseUrl `mappend` listProgramsUrl
-      req <- mkGetRequest url
+      req <- mkGetRequest (baseUrl `mappend` "/program/list")
       serverTalk req mgr)
   
--- | Url to the resource of which a program list can be issued.
-listProgramsUrl :: String
-listProgramsUrl = "/program/list"
+-- | List the resource urls for all the in-flight patterns on the
+-- node.
+listPatterns :: Manager -> Server -> IO (Either String [Resource])
+listPatterns mgr baseUrl =
+  jsonBody status200 =<< (tryString $ do
+    req <- mkGetRequest (baseUrl `mappend` "/pattern/list")
+    serverTalk req mgr)
 
 -- | Run a named pattern from the program described by the
 -- resource. If successful a resource to the pattern is returned.
