@@ -13,6 +13,7 @@ import Shell ( Shell
              , nodeLoadProgram
              , nodeListSelectedProgram
              , nodeListPrograms
+             , nodeListPatterns
              , nodeRunNamedPattern
              , nodeRunRandomPattern
              , storeProgramResource
@@ -40,35 +41,28 @@ eval :: Command -> Shell ()
 -- | Load a program.
 eval (LoadProgram path) = do
   result <- nodeLoadProgram path
-  case result of
-    Right res -> do
-        liftIO $ printf "Saving resource: %s\n" (encodePretty'String res)
-        storeProgramResource res
-    Left  err -> liftIO $ printf "Error: %s\n" err
+  presentJsonBody result
+  either (const $ return ()) storeProgramResource result
   repl
 
 -- | List the patterns from the saved program.
 eval ListSelectedProgram = do
-  result <- nodeListSelectedProgram
-  case result of
-    Right res -> liftIO $ printf "Patterns: %s\n" (encodePretty'String res)
-    Left err  -> liftIO $ printf "Error: %s\n" err
+  presentJsonBody =<< nodeListSelectedProgram
   repl
 
 -- | List the programs available on the node.
 eval ListPrograms = do
-  result <- nodeListPrograms
-  case result of
-    Right res -> liftIO $ printf "Programs: %s\n" (encodePretty'String res)
-    Left err  -> liftIO $ printf "Error: %s\n" err
+  presentJsonBody =<< nodeListPrograms
+  repl
+
+-- | List the patterns in-flight in the node.
+eval ListPatterns = do
+  presentJsonBody =<< nodeListPatterns
   repl
 
 -- | Get the http configuration of the node.
 eval GetHttpConfig = do
-  result <- nodeGetHttpConfig
-  case result of
-    Right res -> liftIO $ printf "Http config: %s\n" (encodePretty'String res)
-    Left  err -> liftIO $ printf "Error: %s\n" err
+  presentJsonBody =<< nodeGetHttpConfig
   repl
 
 -- | Set the http configuration of the node.
@@ -81,20 +75,12 @@ eval (SetHttpConfig server port) = do
 
 -- | Run a named pattern from the saved program.
 eval (RunNamedPattern name trace src) = do
-  result <- nodeRunNamedPattern name trace src
-  case result of
-    Right res -> liftIO $ printf "Got pattern resource: %s\n" 
-                                 (encodePretty'String res)
-    Left  err -> liftIO $ printf "Error: %s\n" err
+  presentJsonBody =<< nodeRunNamedPattern name trace src
   repl
 
 -- | Run a named pattern from the saved program.
 eval (RunRandomPattern trace src) = do
-  result <- nodeRunRandomPattern trace src
-  case result of
-    Right res -> liftIO $ printf "Got pattern resource: %s\n" 
-                                 (encodePretty'String res)
-    Left  err -> liftIO $ printf "Error: %s\n" err
+  presentJsonBody =<< nodeRunRandomPattern trace src
   repl
 
 -- | Print help information.
@@ -114,6 +100,12 @@ eval EmptyLine = repl
 eval (Unknown str) = do
   liftIO $ putStrLn str
   repl
+
+presentJsonBody :: ToJSON a => Either String a -> Shell ()
+presentJsonBody result = 
+  case result of
+    Right reply -> liftIO $ printf "%s\n" (encodePretty'String reply)
+    Left err    -> liftIO $ printf "Error: %s\n" err
 
 encodePretty'String :: ToJSON a => a -> String
 encodePretty'String = BS.unpack . encodePretty

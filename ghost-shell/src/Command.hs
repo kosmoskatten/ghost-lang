@@ -13,6 +13,7 @@ data Command where
     LoadProgram         :: !FilePath -> Command
     ListSelectedProgram :: Command
     ListPrograms        :: Command
+    ListPatterns        :: Command
     GetHttpConfig       :: Command
     SetHttpConfig       :: !String -> !Int -> Command
     RunNamedPattern     :: !String -> !Bool -> !(Maybe String) -> Command
@@ -34,6 +35,7 @@ aCommand :: Parser Command
 aCommand = spaces *> ( try loadProgram
                    <|> try listSelectedProgram
                    <|> try listPrograms
+                   <|> try listPatterns
                    <|> try getHttpConfig
                    <|> try setHttpConfig
                    <|> try runNamedPattern
@@ -53,6 +55,9 @@ listSelectedProgram =
 
 listPrograms :: Parser Command
 listPrograms = keyword "list-programs" >> spaces >> eof >> pure ListPrograms
+
+listPatterns :: Parser Command
+listPatterns = keyword "list-patterns" >> spaces >> eof >> pure ListPatterns
 
 getHttpConfig :: Parser Command
 getHttpConfig = keyword "get-http-config" >> spaces >> eof >> pure GetHttpConfig

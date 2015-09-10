@@ -8,6 +8,7 @@ module Shell
     , nodeLoadProgram
     , nodeListSelectedProgram
     , nodeListPrograms
+    , nodeListPatterns
     , nodeRunNamedPattern
     , nodeRunRandomPattern
     , storeProgramResource
@@ -32,6 +33,7 @@ import GhostLang.API ( PatternInfo (..)
                      , loadProgram
                      , listSelectedProgram
                      , listPrograms
+                     , listPatterns
                      , runNamedPattern
                      , runRandomPattern
                      )
@@ -81,6 +83,11 @@ nodeListPrograms :: Shell (Either String [Resource])
 nodeListPrograms = do
   (mgr, baseUrl) <- nodeParams
   liftIO $ listPrograms mgr baseUrl
+
+nodeListPatterns :: Shell (Either String [Resource])
+nodeListPatterns = do
+  (mgr, baseUrl) <- nodeParams
+  liftIO $ listPatterns mgr baseUrl
 
 nodeRunNamedPattern :: String -> Bool -> Maybe String 
                     -> Shell (Either String Resource)
