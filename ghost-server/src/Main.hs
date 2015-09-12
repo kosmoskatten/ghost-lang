@@ -3,6 +3,9 @@ module Main
     ) where
 
 import GhostLang.Server (runServer)
+import System.Environment (getArgs)
 
 main :: IO ()
-main = runServer 8080
+main = do
+  [listenPort] <- getArgs
+  runServer $ read listenPort

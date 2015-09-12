@@ -3,6 +3,9 @@ module Main
     ) where
 
 import GhostLang.Node (runNode)
+import System.Environment (getArgs)
 
 main :: IO ()
-main = runNode 8000
+main = do
+  [listenPort] <- getArgs
+  runNode $ read listenPort
