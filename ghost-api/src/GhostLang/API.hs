@@ -96,10 +96,7 @@ type ServerReply = (Status, LBS.ByteString)
 
 -- | Get the http configuration.
 getHttpConfig :: Manager -> Server -> IO (Either String Service)
-getHttpConfig mgr baseUrl =
-  jsonBody status200 =<< (tryString $ do
-      req <- mkGetRequest (baseUrl `mappend` httpConfigUrl)
-      serverTalk req mgr)
+getHttpConfig mgr baseUrl = jsonGet mgr $ baseUrl `mappend` httpConfigUrl
 
 -- | Set the http configuration.
 setHttpConfig :: Manager -> Server -> Service -> IO (Either String ())
@@ -130,11 +127,9 @@ loadProgramUrl = "/program/load"
 -- | List the patterns for the selected program on the remote node.
 listSelectedProgram :: Manager -> Server -> Resource 
                     -> IO (Either String [PatternInfo])
-listSelectedProgram mgr baseUrl res =
-  jsonBody status200 =<< (tryString $ do
-      let url = baseUrl `mappend` (T.unpack $ resourceUrl res) `mappend` "/list"
-      req <- mkGetRequest url
-      serverTalk req mgr)
+listSelectedProgram mgr baseUrl res = do
+  let url = baseUrl `mappend` (T.unpack $ resourceUrl res) `mappend` "/list"
+  jsonGet mgr url
 
 -- | List the resource urls for all loaded programs on the node.
 listPrograms :: Manager -> Server -> IO (Either String [Resource])
@@ -146,10 +141,7 @@ listPrograms mgr baseUrl =
 -- | List the resource urls for all the in-flight patterns on the
 -- node.
 listPatterns :: Manager -> Server -> IO (Either String [Resource])
-listPatterns mgr baseUrl =
-  jsonBody status200 =<< (tryString $ do
-    req <- mkGetRequest (baseUrl `mappend` "/pattern/list")
-    serverTalk req mgr)
+listPatterns mgr baseUrl = jsonGet mgr $ baseUrl `mappend` "/pattern/list"
 
 -- | Run a named pattern from the program described by the
 -- resource. If successful a resource to the pattern is returned.
@@ -176,19 +168,15 @@ runRandomPattern mgr baseUrl res params = do
 -- | List the global pattern counter.
 listGlobalCounter :: Manager -> Server -> IO (Either String PatternCounter)
 listGlobalCounter mgr baseUrl =
-  jsonBody status200 =<< (tryString $ do
-    req <- mkGetRequest (baseUrl `mappend` "/pattern/counter")
-    serverTalk req mgr)
+  jsonGet mgr $ baseUrl `mappend` "/pattern/counter"
 
 -- | List the counter for a selected pattern.
 listSelectedCounter :: Manager -> Server -> Resource 
                     -> IO (Either String PatternCounter)
-listSelectedCounter mgr baseUrl res =
-  jsonBody status200 =<< (tryString $ do
-    let url = baseUrl `mappend` (T.unpack $ resourceUrl res)
-                      `mappend` "/counter"
-    req <- mkGetRequest url
-    serverTalk req mgr)
+listSelectedCounter mgr baseUrl res = do
+  let url = baseUrl `mappend` (T.unpack $ resourceUrl res)
+                    `mappend` "/counter"
+  jsonGet mgr url
 
 -- | List the status for a selected pattern.
 listSelectedStatus :: Manager -> Server -> Resource 
