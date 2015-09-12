@@ -19,6 +19,8 @@ data Command where
     RunNamedPattern     :: !String -> !Bool -> !(Maybe String) -> Command
     RunRandomPattern    :: !Bool -> !(Maybe String) -> Command
     ListGlobalCounter   :: Command
+    ListSelectedCounter :: !String -> Command
+    ListSelectedStatus  :: !String -> Command
     Help                :: Command
     Quit                :: Command
     EmptyLine           :: Command
@@ -42,6 +44,8 @@ aCommand = spaces *> ( try loadProgram
                    <|> try runNamedPattern
                    <|> try runRandomPattern
                    <|> try listGlobalCounter
+                   <|> try listSelectedCounter
+                   <|> try listSelectedStatus
                    <|> try help 
                    <|> try quit 
                    <|> emptyLine )
@@ -86,6 +90,16 @@ runRandomPattern = do
 listGlobalCounter :: Parser Command
 listGlobalCounter = keyword "list-global-counter" >> spaces >> eof 
                             >> pure ListGlobalCounter
+
+listSelectedCounter :: Parser Command
+listSelectedCounter = do
+  keyword "list-selected-counter"
+  ListSelectedCounter <$> ((spaces *> path) <* (spaces >> eof))
+
+listSelectedStatus :: Parser Command
+listSelectedStatus = do
+  keyword "list-selected-status"
+  ListSelectedStatus <$> ((spaces *> path) <* (spaces >> eof))
 
 help :: Parser Command
 help = string "help" >> spaces >> eof >> pure Help

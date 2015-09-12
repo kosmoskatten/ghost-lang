@@ -12,6 +12,8 @@ module Shell
     , nodeRunNamedPattern
     , nodeRunRandomPattern
     , nodeListGlobalCounter
+    , nodeListSelectedCounter
+    , nodeListSelectedStatus
     , storeProgramResource
     ) where
 
@@ -23,7 +25,8 @@ import GhostLang.API ( PatternInfo (..)
                      , Service (..)
                      , NamedPattern (..)
                      , ExecParams (..)
-                     , PatternCounter (..)
+                     , PatternCounter
+                     , PatternStatus
                      , getHttpConfig
                      , setHttpConfig
                      , loadProgram
@@ -33,6 +36,8 @@ import GhostLang.API ( PatternInfo (..)
                      , runNamedPattern
                      , runRandomPattern
                      , listGlobalCounter
+                     , listSelectedCounter
+                     , listSelectedStatus
                      )
 import Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
 import qualified Data.Text as T
@@ -121,6 +126,18 @@ nodeListGlobalCounter :: MonadIO m => IORef State
 nodeListGlobalCounter state = do
   (mgr, baseUrl) <- nodeParams <$> liftIO (readIORef state)
   liftIO $ listGlobalCounter mgr baseUrl
+
+nodeListSelectedCounter :: MonadIO m => IORef State -> String 
+                        -> m (Either String PatternCounter)
+nodeListSelectedCounter state res = do
+  (mgr, baseUrl) <- nodeParams <$> liftIO (readIORef state)
+  liftIO $ listSelectedCounter mgr baseUrl $ Resource { resourceUrl = T.pack res }
+
+nodeListSelectedStatus :: MonadIO m => IORef State -> String
+                       -> m (Either String PatternStatus)
+nodeListSelectedStatus state res = do
+  (mgr, baseUrl) <- nodeParams <$> liftIO (readIORef state)
+  liftIO $ listSelectedStatus mgr baseUrl $ Resource { resourceUrl = T.pack res }
 
 storeProgramResource :: MonadIO m => IORef State -> Resource -> m ()
 storeProgramResource state res = 

@@ -18,6 +18,8 @@ module GhostLang.API
     , runNamedPattern
     , runRandomPattern
     , listGlobalCounter
+    , listSelectedCounter
+    , listSelectedStatus
     , module Data.Aeson
     ) where
 
@@ -178,6 +180,23 @@ listGlobalCounter mgr baseUrl =
     req <- mkGetRequest (baseUrl `mappend` "/pattern/counter")
     serverTalk req mgr)
 
+-- | List the counter for a selected pattern.
+listSelectedCounter :: Manager -> Server -> Resource 
+                    -> IO (Either String PatternCounter)
+listSelectedCounter mgr baseUrl res =
+  jsonBody status200 =<< (tryString $ do
+    let url = baseUrl `mappend` (T.unpack $ resourceUrl res)
+                      `mappend` "/counter"
+    req <- mkGetRequest url
+    serverTalk req mgr)
+
+-- | List the status for a selected pattern.
+listSelectedStatus :: Manager -> Server -> Resource 
+                   -> IO (Either String PatternStatus)
+listSelectedStatus mgr baseUrl res = do
+  let url = baseUrl `mappend` (T.unpack $ resourceUrl res) `mappend` "/status"
+  jsonGet mgr url
+
 -- | Make a POST request carrying a JSON object and expecting a JSON
 -- object as response. Can throw exception if the url is malformed.
 mkPostRequest :: ToJSON a => String -> a -> IO Request
@@ -221,6 +240,12 @@ serverTalk :: Request -> Manager -> IO ServerReply
 serverTalk req mgr = do
   resp <- httpLbs req mgr
   return (responseStatus resp, responseBody resp)
+
+jsonGet :: FromJSON a => Manager -> String -> IO (Either String a)
+jsonGet mgr url = do
+  jsonBody status200 =<< (tryString $ do
+    req <- mkGetRequest url
+    serverTalk req mgr)
 
 jsonBody :: FromJSON a => Status -> Either String ServerReply 
          -> IO (Either String a)
