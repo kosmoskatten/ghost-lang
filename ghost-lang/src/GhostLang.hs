@@ -14,8 +14,10 @@ module GhostLang
     , runPattern
     ) where
 
+import Control.Exception
 import GhostLang.Compiler (compileAndLink)
 import GhostLang.Conduit (DataChunk)
+import GhostLang.GLog (GLog, logString)
 import GhostLang.Interpreter (IntrinsicSet, runPattern')
 import GhostLang.Types ( Label
                        , Weight
@@ -25,7 +27,6 @@ import GhostLang.Types ( Label
 import GhostLang.RuntimeState ( RuntimeState (..)
                               , TVar
                               , Counter (..)
-                              , GLog
                               , NetworkConfiguration (..)
                               , emptyCounter
                               , emptyNetworkConfiguration )
@@ -58,18 +59,24 @@ runPattern :: GhostPattern
            -> Bool
            -> GLog
            -> IO ()
-runPattern pattern counters' nwConf dataChunk' traceConf glog = do
-  mgr     <- newManager managerSettings
-  random' <- createSystemRandom
-  let state = RuntimeState { counters             = counters'
-                           , networkConfiguration = nwConf
-                           , connectionMgr        = mgr
-                           , dataChunk            = dataChunk'
-                           , shallTrace           = traceConf
-                           , logger               = glog
-                           , random               = random'
-                           }
-  runPattern' pattern state
+runPattern pattern counters' nwConf dataChunk' traceConf glog =
+  handle logException $ do
+    mgr     <- newManager managerSettings
+    random' <- createSystemRandom
+    let state = RuntimeState { counters             = counters'
+                             , networkConfiguration = nwConf
+                             , connectionMgr        = mgr
+                             , dataChunk            = dataChunk'
+                             , shallTrace           = traceConf
+                             , logger               = glog
+                             , random               = random'
+                             }
+    runPattern' pattern state
+      where
+        logException :: SomeException -> IO ()
+        logException e = do
+          logString glog $ "Error: " `mappend` show e
+          throw e
 
 managerSettings :: ManagerSettings
 managerSettings = 
