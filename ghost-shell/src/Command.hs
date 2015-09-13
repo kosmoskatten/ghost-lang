@@ -22,6 +22,7 @@ data Command where
     ListSelectedCounter :: !String -> Command
     ListSelectedStatus  :: !String -> Command
     Help                :: Command
+    HelpApi             :: Command
     Quit                :: Command
     EmptyLine           :: Command
     Unknown             :: !String -> Command
@@ -47,6 +48,7 @@ aCommand = spaces *> ( try loadProgram
                    <|> try listSelectedCounter
                    <|> try listSelectedStatus
                    <|> try help 
+                   <|> try helpApi
                    <|> try quit 
                    <|> emptyLine )
 
@@ -102,10 +104,13 @@ listSelectedStatus = do
   ListSelectedStatus <$> ((spaces *> path) <* (spaces >> eof))
 
 help :: Parser Command
-help = string "help" >> spaces >> eof >> pure Help
+help = keyword "help" >> spaces >> eof >> pure Help
+
+helpApi :: Parser Command
+helpApi = keyword "help-api" >> spaces >> eof >> pure HelpApi
 
 quit :: Parser Command
-quit = string "quit" >> spaces >> eof >> pure Quit
+quit = keyword "quit" >> spaces >> eof >> pure Quit
 
 emptyLine :: Parser Command
 emptyLine = eof *> pure EmptyLine

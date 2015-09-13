@@ -4,7 +4,7 @@ module Main
     ) where
 
 import Command (Command (..), parseCommand)
-import Documentation (commandDocs)
+import Documentation (commandDocs, apiDocs)
 import Data.Aeson.Encode.Pretty (encodePretty)
 import Data.IORef (IORef, newIORef)
 import GhostLang.API (ToJSON)
@@ -109,9 +109,14 @@ eval state (ListSelectedStatus res) = do
   presentJsonBody =<< nodeListSelectedStatus state res
   repl state
 
--- | Print help information.
+-- | Print command documentation.
 eval state Help = do
   outputStrLn $ unlines commandDocs
+  repl state
+
+-- | Print API documentation.
+eval state HelpApi = do
+  outputStrLn $ unlines apiDocs
   repl state
 
 -- | Quit the repl loop.
