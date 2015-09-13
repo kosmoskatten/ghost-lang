@@ -4,6 +4,7 @@ module Main
     ) where
 
 import Command (Command (..), parseCommand)
+import Documentation (commandDocs)
 import Data.Aeson.Encode.Pretty (encodePretty)
 import Data.IORef (IORef, newIORef)
 import GhostLang.API (ToJSON)
@@ -110,7 +111,7 @@ eval state (ListSelectedStatus res) = do
 
 -- | Print help information.
 eval state Help = do
-  outputStrLn "Help ..."
+  outputStrLn $ unlines commandDocs
   repl state
 
 -- | Quit the repl loop.
