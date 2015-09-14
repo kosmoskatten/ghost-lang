@@ -59,63 +59,100 @@ commandDocs =
 
 apiDocs :: [String]
 apiDocs =
-  [ "-= Load a program on the node =-", ""
-  , "HTTP POST on /program/load with JSON (example) payload:"
+  [ "-= GENERAL =-"
+  , "Below is the REST API documentation for ghost. Each procedure is"
+  , "divided in a request and a response part describing HTTP header and"
+  , "payload. URL:s may contain example resources as part of the URL,"
+  , "typically those example resources are named such as ABC or XYZ."
+  , "Values in JSON fields are also example values.", ""
+
+  , "-= LOAD A PROGRAM ON THE NODE =-"
+  , "Request:"
+  , "POST /program/load HTTP/1.0"
+  , "Content-Type: application/json"
   , encodePretty'Str ProgramPath { programPath = "/example/Main.gl" }, ""
-  , "If program loading went out ok, response code 201 with (example) payload:"
+  , "Response:"
+  , "HTTP/1.1 201 Created"
+  , "Content-Type: application/json"
   , encodePretty'Str Resource { resourceUrl = "/program/XYZ" }, ""
-  , "If program loading failed, response code 409 is returned.", ""
-
-  , "-= List all registered programs on the node =-", ""
-  , "HTTP GET on /program/list"
-  , "Response code 200 with (example) payload:"
+  , "Alternative Responses:"
+  , "HTTP/1.1 409 Conflict", ""
+  
+  , "-= LIST ALL REGISTERED PROGRAMS ON THE NODE =-"
+  , "Request:"
+  , "GET /program/list HTTP/1.0", ""
+  , "Response:"
+  , "HTTP/1.1 200 OK"
+  , "Content-Type: application/json"
   , encodePretty'Str [ Resource { resourceUrl = "/program/XYZ" }
-                     , Resource { resourceUrl = "/program/ABC" } ], ""
+                     , Resource { resourceUrl = "/program/ABC" } ], ""    
 
-  , "-= List the patterns for the selected program =-", ""
-  , "HTTP GET on (example) /program/XYZ/list"
-  , "Response code 200 with (example) payload:"
+  , "-= LIST THE PATTERNS FOR THE SELECTED PROGRAM =-"
+  , "Request:"
+  , "GET /program/XYZ/list HTTP/1.0", ""
+  , "Response:"
+  , "HTTP/1.1 200 OK"
+  , "Content-Type: application/json"
   , encodePretty'Str [ PatternInfo { patternName = "pattern1"
                                    , patternWeight = 1 }
                      , PatternInfo { patternName = "pattern2"
                                    , patternWeight = 2 } ], ""
 
-  , "-= List all in-flight patterns on the node =-"
-  , "HTTP GET on /pattern/list"
-  , "Response code 200 with (example) payload:"
+  , "-= LIST ALL IN-FLIGHT PATTERNS ON THE NODE =-"
+  , "Request:"
+  , "GET /pattern/list HTTP/1.0", ""
+  , "Response:"
+  , "HTTP/1.1 200 OK"
+  , "Content-Type: application/json"
   , encodePretty'Str [ Resource { resourceUrl = "/pattern/XYZ" }
                      , Resource { resourceUrl = "/pattern/ABC" } ], ""
 
-  , "-= List the node's http service config =-"
-  , "HTTP GET on /configuration/http"
-  , "Response code 200 with (example) payload:"
+  , "-= LIST THE NODE'S HTTP SERVICE CONFIG =-"
+  , "Request:"
+  , "GET /configuration/http HTTP/1.0", ""
+  , "Response:"
+  , "HTTP/1.1 200 OK"
+  , "Content-Type: application/json"
   , encodePretty'Str $ Service { serviceAddress = "http://server-host"
                                , servicePort    = 8080 }, ""
 
-  , "-= Set the node's http service config =-"
-  , "HTTP PUT on /configuration/http with (example) payload:"
+  , "-= SET THE NODE'S HTTP SERVICE CONFIG =-"
+  , "Request:"
+  , "PUT /configuration/http HTTP/1.0"
+  , "Content-Type: application/json"
   , encodePretty'Str $ Service { serviceAddress = "http://server-host"
-                               , servicePort    = 8080 }
-  , "Response code 200", ""
+                               , servicePort    = 8080 }, ""
+  , "Response:"
+  , "HTTP/1.1 200 OK", ""
 
-  , "-= Run a named pattern from the selected program =-"
-  , "HTTP POST on (example) /program/XYZ/named-pattern with (example) payload:"
+  , "-= RUN A NAMED PATTERN FROM THE SELECTED PROGRAM =-"
+  , "Request:"
+  , "POST /program/XYZ/named-pattern HTTP/1.0"
+  , "Content-Type: application/json"
   , encodePretty'Str $ 
       NamedPattern { execPattern = "pattern1"
                    , execParams  = ExecParams { shallTrace = True
                                               , srcIp      = Just "10.0.0.3" }
                    }, ""
-  , "If anything went out ok, response code 201 with (example) payload:"
-  , encodePretty'Str $ Resource { resourceUrl = "/pattern/XYZ" }
-  , "If the selected program not was found response code 404 is returned.", ""
+  , "Response:"
+  , "HTTP/1.1 201 Created"
+  , "Content-Type: application/json"
+  , encodePretty'Str $ Resource { resourceUrl = "/pattern/XYZ" }, ""
+  , "Alternative responses:"
+  , "HTTP/1.1 404 Not Found", ""
 
-  , "-= Run a random pattern from the selected program =-"
-  , "HTTP POST on (example) /program/XYZ/random-pattern with (example) payload:"
+  , "-= RUN A RANDOM PATTERN FROM THE SELECTED PROGRAM =-"
+  , "Request:"
+  , "POST /program/XYZ/random-pattern HTTP/1.0"
+  , "Content-Type: application/json"
   , encodePretty'Str $ ExecParams { shallTrace = False
                                   , srcIp      = Nothing }, ""
-  , "If anything went out ok, response code 201 with (example) payload:"
-  , encodePretty'Str $ Resource { resourceUrl = "/pattern/XYZ" }
-  , "If the selected program not was found response code 404 is returned.", ""
+  , "Response:"
+  , "HTTP/1.1 201 Created"
+  , "Content-Type: application/json"
+  , encodePretty'Str $ Resource { resourceUrl = "/pattern/XYZ" }, ""
+  , "Alternative responses:"
+  , "HTTP/1.1 404 Not Found", ""
   ]
 
 encodePretty'Str :: ToJSON a => a -> String
