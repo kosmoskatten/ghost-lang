@@ -63,3 +63,19 @@ pattern pictureUpload with weight 1
     webMedia_uploadPicture(gaussian(3000, 1200))
   }
 }
+
+/*
+ * Paced upload demo.
+ */
+pattern pacedUpload with weight 1
+{
+  Http PUT [] literal(10) MB literal(8) mbps
+}
+
+/*
+ * Paced download demo.
+ */
+pattern pacedDownload with weight 1
+{
+  Http GET [] literal(10) MB literal(8) mbps
+}

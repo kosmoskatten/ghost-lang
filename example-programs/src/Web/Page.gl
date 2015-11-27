@@ -12,11 +12,6 @@ module Web.Page
  */
 procedure webPage_loadNewsPaperPage(numImages, imageSizeKB)
 {
-  // TODO: Shall be updated once the random value functions are available.
-
-  // TODO: Shall be updated once the bug of not propagating stored
-  // values to concurrent sections is fixed.
-  
   // Fetch HTML page ...
   Http GET [] gaussian(70, 30) KB,
 
