@@ -1,4 +1,4 @@
-resolver: lts-3.15
+resolver: lts-6.2
 packages:
 - ./ghost-api
 - ./ghost-conduit
