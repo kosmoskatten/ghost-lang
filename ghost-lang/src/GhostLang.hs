@@ -52,8 +52,8 @@ toPatternList (Program xs) = map extrTuple xs
 
 -- | Run a selected pattern with a set of counters, a network
 -- configuration, payload data, tracing configuration and the logger.
-runPattern :: GhostPattern 
-           -> [TVar Counter] 
+runPattern :: GhostPattern
+           -> [TVar Counter]
            -> NetworkConfiguration
            -> DataChunk
            -> Bool
@@ -61,7 +61,7 @@ runPattern :: GhostPattern
            -> IO ()
 runPattern pattern counters' nwConf dataChunk' traceConf glog =
   handle logException $ do
-    mgr     <- newManager managerSettings
+    mgr     <- newManager $ managerSettings nwConf
     random' <- createSystemRandom
     let state = RuntimeState { counters             = counters'
                              , networkConfiguration = nwConf
@@ -78,12 +78,17 @@ runPattern pattern counters' nwConf dataChunk' traceConf glog =
           logString glog $ "Error: " `mappend` show e
           throw e
 
-managerSettings :: ManagerSettings
-managerSettings = 
-    defaultManagerSettings 
-        { managerRawConnection = rawConnectionModifySocket modifySocket }
+managerSettings :: NetworkConfiguration -> ManagerSettings
+managerSettings nwConf =
+    defaultManagerSettings
+        { managerRawConnection =
+            rawConnectionModifySocket $ modifySocket nwConf
+        }
 
-modifySocket :: Socket -> IO ()
-modifySocket _ = putStrLn "MODIFY"
+modifySocket :: NetworkConfiguration -> Socket -> IO ()
+modifySocket nwConf _ =
+    case srcIpAddress nwConf of
+        Just address -> putStrLn $ "MODIFY to " ++ address
+        Nothing      -> putStrLn "NO MODIFY"
 
 
