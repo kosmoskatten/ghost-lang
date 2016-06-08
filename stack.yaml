@@ -7,4 +7,5 @@ packages:
 - ./ghost-shell
 - ./ghost-server
 - ./ghost-node
+- ../http-client/http-client
 extra-deps: []

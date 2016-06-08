@@ -75,7 +75,7 @@ library
                      , filepath
                      , ghost-conduit
                      , ghost-logger
-                     , http-client
+                     , http-client == 0.4.30
                      , http-conduit
                      , http-types
                      , mtl

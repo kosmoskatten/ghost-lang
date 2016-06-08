@@ -36,7 +36,12 @@ import Network.HTTP.Client ( ManagerSettings (..)
                            , newManager
                            , rawConnectionModifySocket
                            )
-import Network.Socket (Socket)
+import Network.Socket ( AddrInfo (..)
+                      , Socket
+                      , bind
+                      , defaultHints
+                      , getAddrInfo
+                      )
 
 -- | Convenience type aliases for external usage.
 type GhostProgram = Program IntrinsicSet
@@ -86,9 +91,12 @@ managerSettings nwConf =
         }
 
 modifySocket :: NetworkConfiguration -> Socket -> IO ()
-modifySocket nwConf _ =
+modifySocket nwConf socket =
     case srcIpAddress nwConf of
-        Just address -> putStrLn $ "MODIFY to " ++ address
-        Nothing      -> putStrLn "NO MODIFY"
-
-
+        Just address -> do
+            putStrLn $ "Set source IP to " ++ address
+            addrInfo:_ <- getAddrInfo (Just defaultHints)
+                                      (Just address)
+                                      Nothing
+            bind socket $ addrAddress addrInfo
+        Nothing      -> return ()
