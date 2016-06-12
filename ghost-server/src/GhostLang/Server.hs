@@ -24,7 +24,12 @@ import GhostLang.GLog ( GLog
                       )
 import Network.Wai.Conduit
 import Network.HTTP.Types
-import Network.Wai.Handler.Warp (run)
+import Network.Wai.Handler.Warp ( HostPreference
+                                , defaultSettings
+                                , setHost
+                                , setPort
+                                , runSettings
+                                )
 import Text.Printf (printf)
 import qualified Data.ByteString.Char8 as BS
 
@@ -32,11 +37,17 @@ data State = State { logger :: !GLog
                    , chunk  :: !DataChunk
                    }
 
-runServer :: Int -> IO ()
-runServer port = do
-  state <- State <$> newStdoutGLog <*> genDataChunk 32768
-  logString (logger state) $ printf "Ghost Server listening on port %d" port
-  run port $ application state
+runServer :: HostPreference -> Int -> IO ()
+runServer hostPreference listenPort = do
+    state <- State <$> newStdoutGLog <*> genDataChunk 32768
+    logString (logger state) $ 
+        printf "Ghost Server listening on %s:%d"
+            (show hostPreference) listenPort
+    let settings = setHost hostPreference $ 
+                   setPort listenPort $
+                   defaultSettings
+
+    runSettings settings $ application state
 
 -- | Application entry per request.
 application :: State -> Application
